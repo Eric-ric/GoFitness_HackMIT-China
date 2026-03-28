@@ -47,9 +47,9 @@ enum LKey: String {
     case trainingLogWorkoutsLanguageNote
     case goalTitleTrain3, goalTitleWalk8000, goalTitleSleepEarly3
     case formTitle, formDesc, formIntentFooter, formIntentPlaceholder
-    case formActionPresetSquat, formSquatLiveButton, formPickVideoLabel, formVideoAnalysisSection
+    case formActionPresetSquat, formActionPresetPushUp, formSquatLiveButton, formPushUpLiveButton, formLiveExerciseButton, formPickVideoLabel, formVideoAnalysisSection
     case formVideoReadyHint, formStartVideoAnalysis
-    case formSquatLiveNav, formSquatCountFormat, formSquatReset, formSquatPermissionDenied
+    case formSquatLiveNav, formPushUpLiveNav, formLiveExerciseNav, formSquatCountFormat, formPushUpCountFormat, formLiveExerciseCountFormat, formSquatReset, formSquatPermissionDenied
     case formSquatFeedbackPreparing, formSquatFeedbackReset, formRecognizingTargetFormat
     case formExerciseNameSquat, formExerciseNamePushUp, formExerciseNameOther
     case formVisionInferredFormat, formIntentMismatchFormat, formIntentAlignedFormat
@@ -57,6 +57,7 @@ enum LKey: String {
     case formVideoAnalysisMetaFormat, formVideoAnalysisAccuracyHint
     case formVideoProgressFormat, formVideoAnalysisLongHint
     case formSquatCameraFront, formSquatCameraBack
+    case formCameraUnavailableHint, formLiveCameraIPadHint
     case formQualityDisclaimerShort, formVideoQualityTitle, formVideoQualityDisclaimer
     case formQualityTierLabel, formQualityTierGood, formQualityTierOk, formQualityTierLow
     case settingsAiProxySection, settingsAiProxyURL, settingsAiProxyToken, settingsAiProxyHint
@@ -129,13 +130,20 @@ struct L10n {
             .formIntentFooter: "可填写目标动作名称；视频分析会用人姿态推断实际动作类型，若与填写不一致，将按推断结果评价并提示。",
             .formIntentPlaceholder: "例如：深蹲",
             .formActionPresetSquat: "深蹲",
+            .formActionPresetPushUp: "俯卧撑",
             .formSquatLiveButton: "实时深蹲识别",
+            .formPushUpLiveButton: "实时俯卧撑识别",
+            .formLiveExerciseButton: "实时动作识别",
             .formPickVideoLabel: "从相册选择视频",
             .formVideoAnalysisSection: "视频分析",
             .formVideoReadyHint: "已选择视频，可开始分析。",
             .formStartVideoAnalysis: "分析动作",
             .formSquatLiveNav: "深蹲识别",
+            .formPushUpLiveNav: "俯卧撑识别",
+            .formLiveExerciseNav: "实时动作",
             .formSquatCountFormat: "深蹲计数：%d",
+            .formPushUpCountFormat: "俯卧撑次数（演示）：%d",
+            .formLiveExerciseCountFormat: "次数（演示）：%d",
             .formSquatReset: "重置计数",
             .formSquatPermissionDenied: "相机权限未开启，请到系统设置中允许相机访问。",
             .formSquatFeedbackPreparing: "准备中…",
@@ -156,6 +164,8 @@ struct L10n {
             .formVideoAnalysisLongHint: "长视频或高分辨率会较慢，界面有进度即在处理，请耐心等待。",
             .formSquatCameraFront: "前置",
             .formSquatCameraBack: "后置",
+            .formCameraUnavailableHint: "无法使用实时相机（可能被其它应用占用或本机无可用摄像头）。请使用下方「从相册选择视频」进行动作分析。",
+            .formLiveCameraIPadHint: "iPad 若横屏预览黑屏或异常，请尝试竖屏、或切换前/后置；仍异常可用相册视频分析（不依赖实时预览）。",
             .formQualityDisclaimerShort: "动作提示基于摄像头画面估算，仅供参考，不能替代专业教练。",
             .formVideoQualityTitle: "动作质量与正确性（启发式）",
             .formVideoQualityDisclaimer: "以下为基于关键点的简易规则判断，侧拍角度更准确；如有伤病请咨询专业人士。",
@@ -303,13 +313,20 @@ struct L10n {
             .formIntentFooter: "Enter a target move name; analysis infers the actual pattern from pose. If it differs from your label, we score by the detected pattern and explain.",
             .formIntentPlaceholder: "e.g. Squat",
             .formActionPresetSquat: "Squat",
+            .formActionPresetPushUp: "Push-up",
             .formSquatLiveButton: "Live squat tracking",
+            .formPushUpLiveButton: "Live push-up tracking",
+            .formLiveExerciseButton: "Live movement tracking",
             .formPickVideoLabel: "Choose video from library",
             .formVideoAnalysisSection: "Video analysis",
             .formVideoReadyHint: "Video selected. You can start analysis.",
             .formStartVideoAnalysis: "Analyze movement",
             .formSquatLiveNav: "Squat tracking",
+            .formPushUpLiveNav: "Push-up tracking",
+            .formLiveExerciseNav: "Live movement",
             .formSquatCountFormat: "Squats: %d",
+            .formPushUpCountFormat: "Push-ups (demo): %d",
+            .formLiveExerciseCountFormat: "Reps (demo): %d",
             .formSquatReset: "Reset count",
             .formSquatPermissionDenied: "Camera access is off. Enable it in Settings.",
             .formSquatFeedbackPreparing: "Getting ready…",
@@ -330,6 +347,8 @@ struct L10n {
             .formVideoAnalysisLongHint: "Long or high-res clips take longer. If the progress moves, it’s still working.",
             .formSquatCameraFront: "Front",
             .formSquatCameraBack: "Back",
+            .formCameraUnavailableHint: "Live camera isn’t available (in use or missing). Use “Choose video from library” below for movement analysis.",
+            .formLiveCameraIPadHint: "On iPad, if the preview is black in landscape, try portrait or switch cameras; you can always analyze a video from Photos instead.",
             .formQualityDisclaimerShort: "Form cues are estimated from the camera view — not medical advice.",
             .formVideoQualityTitle: "Quality & form cues (heuristic)",
             .formVideoQualityDisclaimer: "Rule-based hints from pose landmarks; a side view works best. See a pro if injured.",
@@ -1778,6 +1797,17 @@ struct MotionCorrectionView: View {
         actionIntent.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var liveEntryButtonTitle: String {
+        guard let k = PoseExerciseInference.parseUserIntent(trimmedIntent) else {
+            return L10n.t(.formLiveExerciseButton, lang)
+        }
+        switch k {
+        case .squat: return L10n.t(.formSquatLiveButton, lang)
+        case .pushUp: return L10n.t(.formPushUpLiveButton, lang)
+        case .standingOrOther, .unknown: return L10n.t(.formLiveExerciseButton, lang)
+        }
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -1791,10 +1821,17 @@ struct MotionCorrectionView: View {
                 Section {
                     TextField(L10n.t(.formIntentPlaceholder, lang), text: $actionIntent)
                         .textInputAutocapitalization(.never)
-                    Button {
-                        actionIntent = L10n.t(.formActionPresetSquat, lang)
-                    } label: {
-                        Label(L10n.t(.formActionPresetSquat, lang), systemImage: "bolt.fill")
+                    VStack(alignment: .leading, spacing: 10) {
+                        Button {
+                            actionIntent = L10n.t(.formActionPresetSquat, lang)
+                        } label: {
+                            Label(L10n.t(.formActionPresetSquat, lang), systemImage: "figure.strengthtraining.traditional")
+                        }
+                        Button {
+                            actionIntent = L10n.t(.formActionPresetPushUp, lang)
+                        } label: {
+                            Label(L10n.t(.formActionPresetPushUp, lang), systemImage: "dumbbell.fill")
+                        }
                     }
                 } header: {
                     Text(L10n.t(.formTitle, lang))
@@ -1806,7 +1843,7 @@ struct MotionCorrectionView: View {
                     NavigationLink {
                         SquatRecognitionDemoView(intendedExercise: trimmedIntent)
                     } label: {
-                        Label(L10n.t(.formSquatLiveButton, lang), systemImage: "camera.viewfinder")
+                        Label(liveEntryButtonTitle, systemImage: "camera.viewfinder")
                     }
                 }
 
