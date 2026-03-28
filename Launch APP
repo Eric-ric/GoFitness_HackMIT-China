@@ -1,0 +1,10 @@
+import SwiftUI
+
+@main
+struct GoFitnessApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
