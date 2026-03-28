@@ -1,0 +1,3009 @@
+//
+//  ContentView.swift
+//  GoFitness
+//
+//  Created by Lico on 2026/3/18.
+//
+
+import SwiftUI
+import Combine
+
+#if canImport(PhotosUI)
+import PhotosUI
+#if os(iOS)
+import CoreTransferable
+#endif
+#endif
+
+#if os(iOS)
+import UIKit
+#endif
+
+// MARK: 文件结构（按需用 Xcode 跳转栏或 Ctrl+6 按 MARK 浏览）
+// - 语言枚举 + 文案表 L10n → 根界面 ContentView（底部四 Tab）
+// - 以下各 MARK 对应一个功能模块，见每段 MARK 下方一行说明
+
+enum AppLanguage: String, CaseIterable, Identifiable {
+    case zhHans = "zh-Hans"
+    case en = "en"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .zhHans: return "简体中文"
+        case .en: return "English"
+        }
+    }
+}
+
+enum LKey: String {
+    case tabCommunity, tabAICoach, tabFormCheck, tabMe
+    case navCommunity, navRecommend, recommendFeedHint, feedHeader, feedFooter, followingTab, featuredTab
+    case post, navPost, cancel, postEmpty, postNeedContentOrMedia, postAddImage, postAddVideo, communityMyFeedHeader, communityMyFeedFooter
+    case like, guest
+    case aiTitle, aiChatPlaceholder, aiSend, aiThinking, aiErrorGeneric, aiErrorProxyHintSimulator, aiErrorProxyHintDevice, aiSwipeExitHint
+    case trainingLogNav, trainingLogThisWeek, trainingLogEmpty, trainingLogEmptyHint, trainingLogRest
+    case trainingLogWorkoutsLanguageNote
+    case goalTitleTrain3, goalTitleWalk8000, goalTitleSleepEarly3
+    case formTitle, formDesc, formIntentFooter, formIntentPlaceholder
+    case formActionPresetSquat, formSquatLiveButton, formPickVideoLabel, formVideoAnalysisSection
+    case formVideoReadyHint, formStartVideoAnalysis
+    case formSquatLiveNav, formSquatCountFormat, formSquatReset, formSquatPermissionDenied
+    case formSquatFeedbackPreparing, formSquatFeedbackReset, formRecognizingTargetFormat
+    case formExerciseNameSquat, formExerciseNamePushUp, formExerciseNameOther
+    case formVisionInferredFormat, formIntentMismatchFormat, formIntentAlignedFormat
+    case formVideoAnalyzing, formVideoAnalysisNavTitle, formVideoAnalysisResultTitle
+    case formVideoAnalysisMetaFormat, formVideoAnalysisAccuracyHint
+    case formVideoProgressFormat, formVideoAnalysisLongHint
+    case formSquatCameraFront, formSquatCameraBack
+    case formQualityDisclaimerShort, formVideoQualityTitle, formVideoQualityDisclaimer
+    case formQualityTierLabel, formQualityTierGood, formQualityTierOk, formQualityTierLow
+    case settingsAiProxySection, settingsAiProxyURL, settingsAiProxyToken, settingsAiProxyHint
+    case achievementsTitle, achievementsDesc, achievementsNav
+    case pointsUnitBadge, goalRewardPointsFormat
+    case myGoalsSection, achievementsNoPendingGoals, shopSection, shopBalance, shopRedeem, shopInsufficient, shopRedeemed, shopPointsFormat
+    case shopRewardCoachTitle, shopRewardCoachDesc
+    case shopRewardThemeTitle, shopRewardThemeDesc
+    case shopRewardBadgeTitle, shopRewardBadgeDesc
+    case settingsTitle, language, languageSettingsTitle
+    case accountSettings, account, signedOut, signedIn, notSignedIn, welcomeBack, tapToSignIn
+    case noPhone, unbound, phone, currentAccount, managePhoneHint
+    case changePhone, currentPhone, newPhone, enterNewPhone, codePlaceholder, sendCode, enterNewPhoneFirst, codeSentDemo, phoneEmpty, save
+    case meTitle, content, social, myPlan, myPosts, myPostsDesc, liked, likedDesc, myFollowing, followingNow, follow, unfollow, profileUserPosts, profileEmptyPosts, followingListEmpty, signOut, signOutConfirm
+    case loginTitle, loginSubtitle, phoneOrEmail, password, forgotPassword, createAccount, newHere, close
+    case registerTitle, registerSubtitle, passwordMin, confirmPassword, createAndSignIn
+    case fillAccountPassword, fillAllFields, pwAtLeast6, pwMismatch
+    case resetTitle, resetSubtitle, sendInstructions, resetNeedIdentifier, resetGenerated
+    case profileTitle, avatarAndName, avatarHint, displayName, enterName, saveProfile, cancelProfile
+}
+
+struct L10n {
+    static func t(_ key: LKey, _ lang: AppLanguage) -> String {
+        // For keys not yet translated in some languages, we fall back to English.
+        func en(_ k: LKey) -> String { table[.en]?[k] ?? k.rawValue }
+        return table[lang]?[key] ?? en(key)
+    }
+
+    private static let table: [AppLanguage: [LKey: String]] = [
+        .zhHans: [
+            .tabCommunity: "社区",
+            .tabAICoach: "AI教练",
+            .tabFormCheck: "动作纠正",
+            .tabMe: "我的",
+            .navCommunity: "社区",
+            .navRecommend: "推荐",
+            .recommendFeedHint: "以下为其他用户上传与分享的动态。",
+            .feedHeader: "动态",
+            .feedFooter: "点击右上角“发布”分享你的训练与饮食记录。",
+            .followingTab: "关注",
+            .featuredTab: "精选",
+            .post: "发布",
+            .navPost: "发布",
+            .cancel: "取消",
+            .postEmpty: "请输入内容再发布",
+            .postNeedContentOrMedia: "请填写文字，或选择图片 / 视频后再发布",
+            .postAddImage: "图片",
+            .postAddVideo: "视频",
+            .communityMyFeedHeader: "我发布的",
+            .communityMyFeedFooter: "仅展示当前账号发布的动态，不会出现在精选、关注或推荐。",
+            .like: "点赞",
+            .guest: "游客",
+            .aiTitle: "AI 教练",
+            .aiChatPlaceholder: "例如：帮我制定一周力量训练计划…",
+            .aiSend: "发送",
+            .aiThinking: "思考中…",
+            .aiErrorGeneric: "请求失败，请确认本机代理已启动（见 dashscope-proxy/README）。",
+            .aiSwipeExitHint: "在上方对话区域向上滑动可返回「社区」",
+            .trainingLogNav: "训练日志",
+            .trainingLogThisWeek: "本周安排",
+            .trainingLogEmpty: "暂无本周计划",
+            .trainingLogEmptyHint: "在下方与 AI 教练对话，请 TA 为你制定「一周」训练计划；回复里附带的数据会自动同步到这里。",
+            .trainingLogRest: "休息",
+            .trainingLogWorkoutsLanguageNote: "具体训练内容仍以生成该计划时的语言显示。若需英文，请在 AI 教练中用英文重新生成一周计划。",
+            .goalTitleTrain3: "本周完成 3 次训练",
+            .goalTitleWalk8000: "今天步行 8000 步",
+            .goalTitleSleepEarly3: "本周保证 3 天早睡",
+            .formTitle: "动作纠正",
+            .formDesc: "使用前置摄像头可做实时姿态提示与计数演示；从相册选视频将分析动作质量与正确性（启发式，非医疗结论）。",
+            .formIntentFooter: "可填写目标动作名称；视频分析会用人姿态推断实际动作类型，若与填写不一致，将按推断结果评价并提示。",
+            .formIntentPlaceholder: "例如：深蹲",
+            .formActionPresetSquat: "深蹲",
+            .formSquatLiveButton: "实时深蹲识别",
+            .formPickVideoLabel: "从相册选择视频",
+            .formVideoAnalysisSection: "视频分析",
+            .formVideoReadyHint: "已选择视频，可开始分析。",
+            .formStartVideoAnalysis: "分析动作",
+            .formSquatLiveNav: "深蹲识别",
+            .formSquatCountFormat: "深蹲计数：%d",
+            .formSquatReset: "重置计数",
+            .formSquatPermissionDenied: "相机权限未开启，请到系统设置中允许相机访问。",
+            .formSquatFeedbackPreparing: "准备中…",
+            .formSquatFeedbackReset: "已重置，开始新一组",
+            .formRecognizingTargetFormat: "当前识别：%@",
+            .formExerciseNameSquat: "深蹲",
+            .formExerciseNamePushUp: "俯卧撑",
+            .formExerciseNameOther: "其它 / 未明确",
+            .formVisionInferredFormat: "姿态识别：%@",
+            .formIntentMismatchFormat: "您填写的是「%@」，根据姿态识别更接近「%@」，下列评价按后者为准。",
+            .formIntentAlignedFormat: "填写：%@ · 姿态识别：%@",
+            .formVideoAnalyzing: "正在分析动作…",
+            .formVideoAnalysisNavTitle: "视频分析",
+            .formVideoAnalysisResultTitle: "动作分析结果",
+            .formVideoAnalysisMetaFormat: "已分析 %d 帧，跳过 %d 帧（无有效姿态）",
+            .formVideoAnalysisAccuracyHint: "提示：光线、衣着和拍摄角度会影响识别准确度。",
+            .formVideoProgressFormat: "已扫描 %d / 约 %d 帧 · 有效姿态 %d 帧",
+            .formVideoAnalysisLongHint: "长视频或高分辨率会较慢，界面有进度即在处理，请耐心等待。",
+            .formSquatCameraFront: "前置",
+            .formSquatCameraBack: "后置",
+            .formQualityDisclaimerShort: "动作提示基于摄像头画面估算，仅供参考，不能替代专业教练。",
+            .formVideoQualityTitle: "动作质量与正确性（启发式）",
+            .formVideoQualityDisclaimer: "以下为基于关键点的简易规则判断，侧拍角度更准确；如有伤病请咨询专业人士。",
+            .formQualityTierLabel: "动作是否「到位」（综合启发式）",
+            .formQualityTierGood: "较好：本段里多项指标看起来不错",
+            .formQualityTierOk: "一般：整体尚可，仍有可改进之处",
+            .formQualityTierLow: "需加强：深度、躯干或对称性有明显提醒项",
+            .settingsAiProxySection: "AI 教练（本地代理）",
+            .settingsAiProxyURL: "代理地址",
+            .settingsAiProxyToken: "代理令牌（可选）",
+            .settingsAiProxyHint: "真机请与 Mac 连同一 Wi‑Fi；在 Mac 上运行 dashscope-proxy，终端会显示局域网地址（如 http://192.168.x.x:3000），填到此处，勿加末尾斜杠。模拟器可不填（默认本机）。",
+            .achievementsTitle: "我的成就",
+            .achievementsDesc: "这里将展示你完成的训练目标、连续打卡天数等成就。",
+            .achievementsNav: "成就",
+            .pointsUnitBadge: "分",
+            .goalRewardPointsFormat: "+%d 分",
+            .myGoalsSection: "我的目标",
+            .achievementsNoPendingGoals: "暂无待完成目标，干得漂亮！",
+            .shopSection: "积分商城",
+            .shopBalance: "当前积分",
+            .shopRedeem: "兑换",
+            .shopInsufficient: "积分不足，去完成目标赚积分吧。",
+            .shopRedeemed: "已兑换",
+            .shopPointsFormat: "%d 积分",
+            .shopRewardCoachTitle: "AI 私教加时卡",
+            .shopRewardCoachDesc: "兑换后可在 AI 教练获得一次加长回复体验（演示）。",
+            .shopRewardThemeTitle: "活力橙主题边框",
+            .shopRewardThemeDesc: "个人资料卡片展示用装饰（演示）。",
+            .shopRewardBadgeTitle: "连续打卡徽章",
+            .shopRewardBadgeDesc: "成就页展示限定徽章（演示）。",
+            .settingsTitle: "设置",
+            .language: "语言",
+            .languageSettingsTitle: "语言设置",
+            .accountSettings: "账号设置",
+            .account: "账号",
+            .signedOut: "未登录",
+            .signedIn: "已登录",
+            .notSignedIn: "未登录",
+            .welcomeBack: "欢迎回来",
+            .tapToSignIn: "点击登录以同步你的数据",
+            .noPhone: "未绑定手机号",
+            .unbound: "未绑定",
+            .phone: "手机号",
+            .currentAccount: "当前账号",
+            .managePhoneHint: "登录后可管理手机号",
+            .changePhone: "切换手机号",
+            .currentPhone: "当前手机号",
+            .newPhone: "新手机号",
+            .enterNewPhone: "输入新手机号",
+            .codePlaceholder: "验证码（占位）",
+            .sendCode: "获取验证码",
+            .enterNewPhoneFirst: "请先输入新手机号",
+            .codeSentDemo: "验证码已发送（演示）",
+            .phoneEmpty: "新手机号不能为空",
+            .save: "保存",
+            .meTitle: "我的",
+            .content: "内容",
+            .social: "社交",
+            .myPlan: "我的计划",
+            .myPosts: "我发布的",
+            .myPostsDesc: "这里将展示你在社区发布的内容。",
+            .liked: "我赞过的",
+            .likedDesc: "这里将展示你点赞过的内容。",
+            .myFollowing: "我的关注",
+            .followingNow: "正在关注",
+            .follow: "关注",
+            .unfollow: "取消关注",
+            .profileUserPosts: "动态",
+            .profileEmptyPosts: "暂无动态",
+            .followingListEmpty: "在社区里打开他人主页并点「关注」后，会显示在这里。",
+            .signOut: "退出登录",
+            .signOutConfirm: "确定要退出登录吗？",
+            .loginTitle: "登录",
+            .loginSubtitle: "欢迎回来，继续你的训练计划",
+            .phoneOrEmail: "手机号 / 邮箱",
+            .password: "密码",
+            .forgotPassword: "忘记密码？",
+            .createAccount: "注册账号",
+            .newHere: "还没有账号？",
+            .close: "关闭",
+            .registerTitle: "注册账号",
+            .registerSubtitle: "创建账号以保存训练记录与成就",
+            .passwordMin: "密码（至少 6 位）",
+            .confirmPassword: "确认密码",
+            .createAndSignIn: "注册并登录",
+            .fillAccountPassword: "请填写账号与密码",
+            .fillAllFields: "请完整填写注册信息",
+            .pwAtLeast6: "密码至少 6 位",
+            .pwMismatch: "两次密码不一致",
+            .resetTitle: "找回密码",
+            .resetSubtitle: "请输入手机号或邮箱，我们将发送重置指引（后续可接入短信/邮件服务）。",
+            .sendInstructions: "发送重置指引",
+            .resetNeedIdentifier: "请先填写手机号或邮箱",
+            .resetGenerated: "已生成重置请求（演示）。你可以返回登录页继续。",
+            .profileTitle: "个人资料",
+            .avatarAndName: "头像与昵称",
+            .avatarHint: "后续可接入上传头像/编辑签名等",
+            .displayName: "昵称",
+            .enterName: "请输入昵称",
+            .saveProfile: "保存",
+            .cancelProfile: "取消"
+        ],
+        .en: [
+            .tabCommunity: "Community",
+            .tabAICoach: "AI Coach",
+            .tabFormCheck: "Form Check",
+            .tabMe: "Me",
+            .navCommunity: "Community",
+            .navRecommend: "Recommended",
+            .recommendFeedHint: "Posts shared by other members.",
+            .feedHeader: "Feed",
+            .feedFooter: "Tap “Post” in the top-right to share your workout and nutrition.",
+            .followingTab: "Following",
+            .featuredTab: "Featured",
+            .post: "Post",
+            .navPost: "Post",
+            .cancel: "Cancel",
+            .postEmpty: "Please write something before posting.",
+            .postNeedContentOrMedia: "Add text or pick a photo / video before posting.",
+            .postAddImage: "Photo",
+            .postAddVideo: "Video",
+            .communityMyFeedHeader: "My posts",
+            .communityMyFeedFooter: "Only your posts appear here—not in Featured, Following, or Recommended.",
+            .like: "Like",
+            .guest: "Guest",
+            .aiTitle: "AI Coach",
+            .aiChatPlaceholder: "e.g. Plan a 3-day strength routine…",
+            .aiSend: "Send",
+            .aiThinking: "Thinking…",
+            .aiErrorGeneric: "Request failed. Make sure the local proxy is running (see dashscope-proxy/README).",
+            .aiErrorProxyHintSimulator: "[Simulator] On your Mac, cd to dashscope-proxy and run npm start until you see listening on …:3000. Test with: curl http://127.0.0.1:3000/health",
+            .aiErrorProxyHintDevice: "[Device] http://127.0.0.1 points to the phone itself. Use the same Wi‑Fi as your Mac, then in Me → Settings set the proxy URL to your Mac’s LAN address from Terminal (e.g. http://192.168.x.x:3000, no trailing slash), and keep npm start running on the Mac.",
+            .aiSwipeExitHint: "Swipe up in the chat area above to return to Community",
+            .trainingLogNav: "Training log",
+            .trainingLogThisWeek: "This week",
+            .trainingLogEmpty: "No plan for this week yet",
+            .trainingLogEmptyHint: "Ask your AI coach for a weekly training plan in the chat; the attached data will sync here automatically.",
+            .trainingLogRest: "Rest",
+            .trainingLogWorkoutsLanguageNote: "Workout lines appear in the language used when this plan was created. Ask AI Coach in English for a new weekly plan to refresh them.",
+            .goalTitleTrain3: "Complete 3 workouts this week",
+            .goalTitleWalk8000: "Walk 8,000 steps today",
+            .goalTitleSleepEarly3: "Go to bed early on 3 days this week",
+            .formTitle: "Form Check",
+            .formDesc: "Live camera for form cues and rep demo; pick a video for movement quality analysis (heuristic, not medical advice).",
+            .formIntentFooter: "Enter a target move name; analysis infers the actual pattern from pose. If it differs from your label, we score by the detected pattern and explain.",
+            .formIntentPlaceholder: "e.g. Squat",
+            .formActionPresetSquat: "Squat",
+            .formSquatLiveButton: "Live squat tracking",
+            .formPickVideoLabel: "Choose video from library",
+            .formVideoAnalysisSection: "Video analysis",
+            .formVideoReadyHint: "Video selected. You can start analysis.",
+            .formStartVideoAnalysis: "Analyze movement",
+            .formSquatLiveNav: "Squat tracking",
+            .formSquatCountFormat: "Squats: %d",
+            .formSquatReset: "Reset count",
+            .formSquatPermissionDenied: "Camera access is off. Enable it in Settings.",
+            .formSquatFeedbackPreparing: "Getting ready…",
+            .formSquatFeedbackReset: "Reset. Start a new set.",
+            .formRecognizingTargetFormat: "Target: %@",
+            .formExerciseNameSquat: "Squat",
+            .formExerciseNamePushUp: "Push-up",
+            .formExerciseNameOther: "Other / unclear",
+            .formVisionInferredFormat: "Detected pattern: %@",
+            .formIntentMismatchFormat: "You entered \"%@\". Pose landmarks look closer to \"%@\". The feedback below follows the latter.",
+            .formIntentAlignedFormat: "Entered: %@ · Detected: %@",
+            .formVideoAnalyzing: "Analyzing movement…",
+            .formVideoAnalysisNavTitle: "Video analysis",
+            .formVideoAnalysisResultTitle: "Movement analysis",
+            .formVideoAnalysisMetaFormat: "Analyzed %d frames, skipped %d (no pose)",
+            .formVideoAnalysisAccuracyHint: "Lighting, clothing, and camera angle affect accuracy.",
+            .formVideoProgressFormat: "Scanned %d / ~%d frames · pose OK on %d",
+            .formVideoAnalysisLongHint: "Long or high-res clips take longer. If the progress moves, it’s still working.",
+            .formSquatCameraFront: "Front",
+            .formSquatCameraBack: "Back",
+            .formQualityDisclaimerShort: "Form cues are estimated from the camera view — not medical advice.",
+            .formVideoQualityTitle: "Quality & form cues (heuristic)",
+            .formVideoQualityDisclaimer: "Rule-based hints from pose landmarks; a side view works best. See a pro if injured.",
+            .formQualityTierLabel: "Form check (heuristic summary)",
+            .formQualityTierGood: "Good: several cues look solid in this clip",
+            .formQualityTierOk: "OK: overall fine, but there’s room to improve",
+            .formQualityTierLow: "Needs work: depth, torso, or symmetry flags below",
+            .settingsAiProxySection: "AI Coach (local proxy)",
+            .settingsAiProxyURL: "Proxy base URL",
+            .settingsAiProxyToken: "Proxy token (optional)",
+            .settingsAiProxyHint: "On a physical device, use the same Wi‑Fi as your Mac, run dashscope-proxy on the Mac, and enter the LAN URL shown in Terminal (e.g. http://192.168.x.x:3000) with no trailing slash. Simulator can leave this empty.",
+            .achievementsTitle: "My Achievements",
+            .achievementsDesc: "Here you will see your completed goals, streaks and other achievements.",
+            .achievementsNav: "Achievements",
+            .pointsUnitBadge: "PTS",
+            .goalRewardPointsFormat: "+%d pts",
+            .myGoalsSection: "My goals",
+            .achievementsNoPendingGoals: "No pending goals. Nice work!",
+            .shopSection: "Points shop",
+            .shopBalance: "Your points",
+            .shopRedeem: "Redeem",
+            .shopInsufficient: "Not enough points. Complete goals to earn more.",
+            .shopRedeemed: "Redeemed",
+            .shopPointsFormat: "%d pts",
+            .shopRewardCoachTitle: "AI coach boost",
+            .shopRewardCoachDesc: "One extended reply in AI Coach (demo).",
+            .shopRewardThemeTitle: "Orange profile frame",
+            .shopRewardThemeDesc: "Decoration for profile card (demo).",
+            .shopRewardBadgeTitle: "Streak badge",
+            .shopRewardBadgeDesc: "Limited badge on achievements (demo).",
+            .settingsTitle: "Settings",
+            .language: "Language",
+            .languageSettingsTitle: "Language",
+            .accountSettings: "Account",
+            .account: "Account",
+            .signedOut: "Signed out",
+            .signedIn: "Signed in",
+            .notSignedIn: "Not signed in",
+            .welcomeBack: "Welcome back",
+            .tapToSignIn: "Sign in to sync your data",
+            .noPhone: "No phone",
+            .unbound: "Not set",
+            .phone: "Phone",
+            .currentAccount: "Current account",
+            .managePhoneHint: "Sign in to manage your phone number.",
+            .changePhone: "Change phone number",
+            .currentPhone: "Current phone",
+            .newPhone: "New phone",
+            .enterNewPhone: "Enter new phone",
+            .codePlaceholder: "Code (placeholder)",
+            .sendCode: "Send code",
+            .enterNewPhoneFirst: "Enter a new phone number first.",
+            .codeSentDemo: "Code sent (demo).",
+            .phoneEmpty: "New phone number can’t be empty.",
+            .save: "Save",
+            .meTitle: "Me",
+            .content: "Content",
+            .social: "Social",
+            .myPlan: "My plan",
+            .myPosts: "My Posts",
+            .myPostsDesc: "Your posts in the community will appear here.",
+            .liked: "Liked",
+            .likedDesc: "Posts you've liked will show up here.",
+            .myFollowing: "My Following",
+            .followingNow: "Following",
+            .follow: "Follow",
+            .unfollow: "Unfollow",
+            .profileUserPosts: "Posts",
+            .profileEmptyPosts: "No posts yet",
+            .followingListEmpty: "Follow people from their profile in Community to see them here.",
+            .signOut: "Sign out",
+            .signOutConfirm: "Are you sure you want to sign out?",
+            .loginTitle: "Sign in",
+            .loginSubtitle: "Welcome back. Continue your training plan.",
+            .phoneOrEmail: "Phone / Email",
+            .password: "Password",
+            .forgotPassword: "Forgot password?",
+            .createAccount: "Create account",
+            .newHere: "New here?",
+            .close: "Close",
+            .registerTitle: "Create account",
+            .registerSubtitle: "Create an account to save workouts and achievements.",
+            .passwordMin: "Password (min 6 chars)",
+            .confirmPassword: "Confirm password",
+            .createAndSignIn: "Create & Sign in",
+            .fillAccountPassword: "Please enter your account and password.",
+            .fillAllFields: "Please complete all fields.",
+            .pwAtLeast6: "Password must be at least 6 characters.",
+            .pwMismatch: "Passwords do not match.",
+            .resetTitle: "Reset password",
+            .resetSubtitle: "Enter your phone or email and we'll send reset instructions (placeholder for SMS/Email).",
+            .sendInstructions: "Send instructions",
+            .resetNeedIdentifier: "Please enter your phone or email.",
+            .resetGenerated: "Reset request generated (demo). You can go back to sign in.",
+            .profileTitle: "Profile",
+            .avatarAndName: "Avatar & Name",
+            .avatarHint: "Placeholder for avatar upload and profile fields.",
+            .displayName: "Display name",
+            .enterName: "Enter name",
+            .saveProfile: "Save",
+            .cancelProfile: "Cancel"
+        ]
+    ]
+}
+
+private enum RootTab: Int, Hashable {
+    case community = 0
+    case aiCoach = 1
+    case formCheck = 2
+    case me = 3
+}
+
+/// App 根界面：底部 `TabView` 切换社区 / AI 教练 / 动作纠正 / 我的；并向子视图注入 `CommunityFeedModel`。
+struct ContentView: View {
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @AppStorage("didMigrateLanguage") private var didMigrateLanguage: Bool = false
+    @AppStorage("isChinese") private var legacyIsChinese: Bool = true
+
+    @StateObject private var communityFeed = CommunityFeedModel()
+    @State private var selectedRootTab: RootTab = .community
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    var body: some View {
+        TabView(selection: $selectedRootTab) {
+            CommunityView()
+                .tag(RootTab.community)
+                .tabItem {
+                    Image(systemName: "person.3.fill")
+                    Text(L10n.t(.tabCommunity, lang))
+                }
+
+            AIHelperView(
+                onJumpToFormCheck: {
+                    selectedRootTab = .formCheck
+                },
+                onSwipeExit: {
+                    selectedRootTab = .community
+                }
+            )
+                .tag(RootTab.aiCoach)
+                .tabItem {
+                    Image(systemName: "sparkles")
+                    Text(L10n.t(.tabAICoach, lang))
+                }
+
+            MotionCorrectionView()
+                .tag(RootTab.formCheck)
+                .tabItem {
+                    Image(systemName: "figure.strengthtraining.traditional")
+                    Text(L10n.t(.tabFormCheck, lang))
+                }
+
+            MyView()
+                .tag(RootTab.me)
+                .tabItem {
+                    Image(systemName: "person.crop.circle")
+                    Text(L10n.t(.tabMe, lang))
+                }
+        }
+        .tint(.orange) // 统一 Tab 选中颜色，后面可以改成你的主题色
+        .environmentObject(communityFeed)
+        .onAppear {
+            if !didMigrateLanguage {
+                appLanguageRaw = legacyIsChinese ? AppLanguage.zhHans.rawValue : AppLanguage.en.rawValue
+                didMigrateLanguage = true
+            }
+        }
+    }
+}
+
+// MARK: - 社区
+// 【模块说明】社区 Tab：分段（精选 / 关注 / 推荐）、精选视频区、发帖与动态列表、帖子数据模型。
+
+struct CommunityView: View {
+    @EnvironmentObject private var feed: CommunityFeedModel
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @AppStorage("isSignedIn") private var isSignedIn: Bool = false
+    @AppStorage("userDisplayName") private var userDisplayName: String = ""
+
+    @State private var showCreatePost: Bool = false
+    @State private var communityTab: CommunityTab = .featured
+    @State private var featuredVideos: [FeaturedVideo] = [
+        FeaturedVideo(creator: "Coach Leo", title: "10分钟燃脂HIIT", duration: "10:24", playCount: "12.8k"),
+        FeaturedVideo(creator: "Fit Amy", title: "居家核心训练 | 初学者友好", duration: "08:41", playCount: "9.6k"),
+        FeaturedVideo(creator: "Power Lin", title: "深蹲动作纠正详解", duration: "06:18", playCount: "7.2k")
+    ]
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    private var currentAuthorLabel: String {
+        if isSignedIn, !userDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return userDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return L10n.t(.guest, lang)
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Picker("", selection: $communityTab) {
+                        Text(L10n.t(.featuredTab, lang)).tag(CommunityTab.featured)
+                        Text(L10n.t(.followingTab, lang)).tag(CommunityTab.following)
+                        Text(L10n.t(.navRecommend, lang)).tag(CommunityTab.recommend)
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                if communityTab == .featured {
+                    featuredVideoSection(videos: featuredVideos, headerKey: .featuredTab)
+                } else if communityTab == .following {
+                    userPostsSection($feed.followingPosts, headerKey: .feedHeader, footerKey: .feedFooter, currentUserLabel: currentAuthorLabel)
+                } else {
+                    userPostsSection($feed.recommendPosts, headerKey: .navRecommend, footerKey: .recommendFeedHint, currentUserLabel: currentAuthorLabel)
+                }
+            }
+            .navigationTitle(L10n.t(.navCommunity, lang))
+            .navigationDestination(for: String.self) { userName in
+                OtherUserProfileView(userName: userName)
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showCreatePost = true
+                    } label: {
+                        Label(L10n.t(.post, lang), systemImage: "plus.square")
+                    }
+                }
+            }
+            .sheet(isPresented: $showCreatePost) {
+                CreatePostView { text, imageData, videoURL in
+                    let author = (isSignedIn && !userDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    ? userDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    : L10n.t(.guest, lang)
+                    return feed.tryPublishMyPost(
+                        author: author,
+                        content: text,
+                        imageData: imageData,
+                        localVideoURL: videoURL
+                    )
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func userPostsSection(
+        _ posts: Binding<[CommunityPost]>,
+        headerKey: LKey,
+        footerKey: LKey,
+        currentUserLabel: String
+    ) -> some View {
+        Section {
+            ForEach(posts) { $post in
+                CommunityPostListRow(post: $post, currentUserLabel: currentUserLabel)
+            }
+        } header: {
+            Text(L10n.t(headerKey, lang))
+        } footer: {
+            Text(L10n.t(footerKey, lang))
+        }
+    }
+
+    @ViewBuilder
+    private func featuredVideoSection(videos: [FeaturedVideo], headerKey: LKey) -> some View {
+        Section(header: Text(L10n.t(headerKey, lang))) {
+            ForEach(videos) { video in
+                VStack(alignment: .leading, spacing: 8) {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.orange.opacity(0.18))
+                        .frame(height: 140)
+                        .overlay {
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 42))
+                                .foregroundColor(.white)
+                        }
+
+                    Text(video.title)
+                        .font(.headline)
+                        .lineLimit(2)
+
+                    HStack {
+                        NavigationLink(value: video.creator) {
+                            Text(video.creator)
+                        }
+                        .buttonStyle(.plain)
+                        Spacer()
+                        Text(video.duration)
+                        Text("·")
+                        Text(video.playCount)
+                    }
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 6)
+            }
+        }
+    }
+}
+
+enum CommunityTab: Hashable {
+    case following
+    case featured
+    case recommend
+}
+
+struct CommunityPost: Identifiable, Codable, Equatable {
+    let id: UUID
+    let author: String
+    let content: String
+    let createdAt: Date
+    var likeCount: Int
+    var isLiked: Bool
+    var imageData: Data?
+    var localVideoURL: URL?
+
+    init(
+        id: UUID = UUID(),
+        author: String,
+        content: String,
+        createdAt: Date = Date(),
+        likeCount: Int = 0,
+        isLiked: Bool = false,
+        imageData: Data? = nil,
+        localVideoURL: URL? = nil
+    ) {
+        self.id = id
+        self.author = author
+        self.content = content
+        self.createdAt = createdAt
+        self.likeCount = likeCount
+        self.isLiked = isLiked
+        self.imageData = imageData
+        self.localVideoURL = localVideoURL
+    }
+}
+
+private struct CommunityPostAttachmentView: View {
+    let post: CommunityPost
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+#if os(iOS)
+            if let data = post.imageData, let ui = UIImage(data: data) {
+                Image(uiImage: ui)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxHeight: 220)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+#endif
+            if post.localVideoURL != nil {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.orange.opacity(0.15))
+                        .frame(height: 160)
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 44))
+                        .foregroundColor(.orange)
+                }
+            }
+        }
+    }
+}
+
+/// 社区信息流与「我发布的」共用的单条动态 UI
+private struct CommunityPostListRow: View {
+    @Binding var post: CommunityPost
+    let currentUserLabel: String
+    @EnvironmentObject private var feed: CommunityFeedModel
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    var body: some View {
+        let p = post
+        let canOpenProfile = p.author != currentUserLabel
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: "person.crop.circle.fill")
+                    .foregroundColor(.secondary)
+                if canOpenProfile {
+                    NavigationLink(value: p.author) {
+                        Text(p.author)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Text(p.author)
+                        .font(.headline)
+                }
+                Spacer()
+                Text(p.createdAt, style: .time)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Text(p.content)
+                .font(.body)
+                .foregroundColor(.primary)
+
+            CommunityPostAttachmentView(post: p)
+
+            HStack(spacing: 10) {
+                Button {
+                    guard feed.canToggleLike(postId: post.id) else { return }
+                    var next = post
+                    next.isLiked.toggle()
+                    next.likeCount += next.isLiked ? 1 : -1
+                    post = next
+                    feed.syncLikedSnapshot(next, liked: next.isLiked)
+                } label: {
+                    Label(
+                        L10n.t(.like, lang),
+                        systemImage: p.isLiked ? "heart.fill" : "heart"
+                    )
+                }
+                .labelStyle(.iconOnly)
+                .foregroundColor(p.isLiked ? Color.red : Color.secondary)
+                .buttonStyle(.plain)
+
+                Text("\(max(0, p.likeCount))")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Spacer()
+            }
+            .padding(.top, 4)
+        }
+        .padding(.vertical, 6)
+    }
+}
+
+struct FeaturedVideo: Identifiable {
+    let id = UUID()
+    let creator: String
+    let title: String
+    let duration: String
+    let playCount: String
+}
+
+// MARK: - 本地内容安全（纯前端/本地示例用）
+// 【模块说明】发帖前简单过滤链接/不当内容等，仅演示，无服务端审核。
+/// 仅用于“拦截明显刷屏/不良信息”，无法替代服务端审核（纯本地场景不可能做到 100% 安全）。
+private enum ContentSafety {
+    static func rejectionReason(for rawText: String) -> String? {
+        let text = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.isEmpty { return "内容不能为空" }
+        if text.count > 600 { return "内容过长，请精简后再试" }
+
+        // 手机号：大陆 1[3-9]xxxxxxxxx
+        if text.range(of: "\\b1[3-9]\\d{9}\\b", options: .regularExpression) != nil {
+            return "疑似联系方式（手机号）内容被拦截"
+        }
+
+        // 邮箱
+        if text.range(of: "\\b[\\w.+-]+@[\\w-]+\\.[\\w-]+\\b", options: .regularExpression) != nil {
+            return "疑似邮箱内容被拦截"
+        }
+
+        // URL / 短链
+        if text.range(of: "(https?://|www\\.)\\S+", options: .regularExpression) != nil {
+            return "疑似链接内容被拦截"
+        }
+
+        // 常见不良/刷屏关键词（可继续扩充）
+        let bannedKeywords: [String] = [
+            "赌博", "博彩", "诈骗", "钓鱼", "毒品", "卖淫", "色情", "淫秽", "涉黄", "裸",
+            "卖号", "出售", "购买", "外挂", "刷分", "代练"
+        ]
+        if bannedKeywords.contains(where: { kw in
+            text.range(of: kw, options: .caseInsensitive) != nil
+        }) {
+            return "内容可能不合适，已拦截"
+        }
+
+        return nil
+    }
+}
+
+private enum FollowedUsersStore {
+    static let appStorageKey = "followedUsersJSON_v1"
+
+    static func names(from json: String) -> [String] {
+        guard let data = json.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([String].self, from: data) else { return [] }
+        return decoded
+    }
+
+    static func json(from names: [String]) -> String {
+        guard let data = try? JSONEncoder().encode(names) else { return "[]" }
+        return String(data: data, encoding: .utf8) ?? "[]"
+    }
+
+    static func setFollowed(_ name: String, add: Bool, json: inout String) {
+        var set = Set(names(from: json))
+        if add { set.insert(name) } else { set.remove(name) }
+        json = Self.json(from: Array(set).sorted())
+    }
+
+    static func isFollowing(_ name: String, json: String) -> Bool {
+        names(from: json).contains(name)
+    }
+}
+
+@MainActor
+final class CommunityFeedModel: ObservableObject {
+    private static let likedPostsStorageKey = "likedCommunityPostsJSON_v1"
+
+    @Published var followingPosts: [CommunityPost]
+    @Published var recommendPosts: [CommunityPost]
+    /// 仅当前用户在「社区 → 我的」发布的动态，不出现在精选/关注/推荐
+    @Published var myPublishedPosts: [CommunityPost]
+    /// 用户点赞过的动态快照（持久化，与「我赞过的」同步）
+    @Published private(set) var likedPosts: [CommunityPost]
+
+    // MARK: 本地“反刷屏”状态（仅当前会话）
+    // 限制 AI 发送频率等，仅内存、不持久化。
+    private var myPostTimestamps: [Date] = []
+    private var lastMyPostText: String = ""
+    private var lastMyPostAt: Date?
+
+    private var lastLikeToggleAtByPostID: [UUID: Date] = [:]
+    private let myPostCooldownSeconds: TimeInterval = 2.0
+    private let myPostMaxPerMinute: Int = 3
+    private let myRepeatContentWindowSeconds: TimeInterval = 30
+    private let likeToggleCooldownSeconds: TimeInterval = 0.8
+
+    init() {
+        followingPosts = [
+            CommunityPost(author: "GoFitness助手", content: "今天完成了 5km 跑步，感觉状态不错！", likeCount: 12),
+            CommunityPost(author: "GoFitness助手", content: "力量训练要注意动作标准，宁轻勿乱。", likeCount: 5)
+        ]
+        recommendPosts = [
+            CommunityPost(author: "阿杰", content: "刚练完腿，分享一下今天的深蹲组数：5×5，最后一组有点吃力但动作没变形。", likeCount: 24, isLiked: false),
+            CommunityPost(author: "跑步的小林", content: "晨跑打卡第 30 天，配速比上周快了 20 秒，继续堆跑量。", likeCount: 41, isLiked: true),
+            CommunityPost(author: "瑜伽Mia", content: "上传了一段睡前拉伸跟练，适合久坐族，欢迎一起打卡～", likeCount: 18, isLiked: false),
+            CommunityPost(author: "举铁的大熊", content: "卧推突破 80kg 做组了，记录一下。护腕一定要戴好。", likeCount: 56, isLiked: false),
+            CommunityPost(author: "营养笔记Cici", content: "今日练后餐：鸡胸+糙米+西兰花，蛋白大概 35g，供大家参考。", likeCount: 33, isLiked: false)
+        ]
+        myPublishedPosts = []
+        likedPosts = Self.loadLikedPostsFromStorage()
+        reconcileLikedPostsWithFeed()
+    }
+
+    func posts(author: String) -> [CommunityPost] {
+        (followingPosts + recommendPosts + myPublishedPosts)
+            .filter { $0.author == author }
+            .sorted { $0.createdAt > $1.createdAt }
+    }
+
+    /// 发表到「社区 → 我的」：做本地限流与内容拦截
+    /// - Returns: `nil` 表示允许发布；否则返回拦截原因（由 CreatePostView 展示）
+    func tryPublishMyPost(
+        author: String,
+        content: String,
+        imageData: Data?,
+        localVideoURL: URL?
+    ) -> String? {
+        let now = Date()
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 1) 限流：冷却 + 每分钟最大次数
+        myPostTimestamps.removeAll { now.timeIntervalSince($0) > 60 }
+        if let last = myPostTimestamps.last, now.timeIntervalSince(last) < myPostCooldownSeconds {
+            return "发布过快，请稍后再试"
+        }
+        if myPostTimestamps.count >= myPostMaxPerMinute {
+            return "发帖太频繁，请稍后再试"
+        }
+
+        // 2) 重复内容拦截（同内容短时间内重复发布）
+        if !trimmed.isEmpty,
+           trimmed == lastMyPostText,
+           let lastAt = lastMyPostAt,
+           now.timeIntervalSince(lastAt) < myRepeatContentWindowSeconds {
+            return "内容重复太频繁，已拦截"
+        }
+
+        // 3) 本地敏感内容拦截（仅示例规则；支持“仅媒体”发布）
+        if !trimmed.isEmpty,
+           let reason = ContentSafety.rejectionReason(for: trimmed) {
+            return reason
+        }
+
+        // 4) 简单限制媒体体积（可选：不做严格也不会影响编译）
+        if let data = imageData, data.count > 5 * 1024 * 1024 {
+            return "图片太大，请换一张更小的"
+        }
+        if let url = localVideoURL {
+            if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+               let size = attrs[.size] as? NSNumber,
+               size.int64Value > 25 * 1024 * 1024 {
+                return "视频太大，请换一段更短的"
+            }
+        }
+
+        // 5) 通过：记录时间窗并插入帖子
+        myPostTimestamps.append(now)
+        lastMyPostText = trimmed
+        lastMyPostAt = now
+
+        myPublishedPosts.insert(
+            CommunityPost(author: author, content: trimmed, imageData: imageData, localVideoURL: localVideoURL),
+            at: 0
+        )
+        return nil
+    }
+
+    /// 点赞切换冷却：防止短时间疯狂点击
+    func canToggleLike(postId: UUID) -> Bool {
+        let now = Date()
+        if let last = lastLikeToggleAtByPostID[postId],
+           now.timeIntervalSince(last) < likeToggleCooldownSeconds {
+            return false
+        }
+        lastLikeToggleAtByPostID[postId] = now
+        return true
+    }
+
+    /// 在社区里点赞/取消赞时调用，更新「我赞过的」列表并持久化
+    func syncLikedSnapshot(_ post: CommunityPost, liked: Bool) {
+        if liked {
+            guard !likedPosts.contains(where: { $0.id == post.id }) else { return }
+            var copy = post
+            copy.isLiked = true
+            likedPosts.insert(copy, at: 0)
+        } else {
+            likedPosts.removeAll { $0.id == post.id }
+        }
+        persistLikedPosts()
+    }
+
+    /// 在「我赞过的」里取消赞：从列表移除，并把各信息流里同 id 动态的点赞状态对齐
+    func removeLikeEverywhere(postId: UUID) {
+        likedPosts.removeAll { $0.id == postId }
+        persistLikedPosts()
+        unsetLikeInFeedArrays(postId: postId)
+    }
+
+    private static func loadLikedPostsFromStorage() -> [CommunityPost] {
+        guard let data = UserDefaults.standard.data(forKey: likedPostsStorageKey),
+              let decoded = try? JSONDecoder().decode([CommunityPost].self, from: data) else { return [] }
+        return decoded.sorted { $0.createdAt > $1.createdAt }
+    }
+
+    private func persistLikedPosts() {
+        guard let data = try? JSONEncoder().encode(likedPosts) else { return }
+        UserDefaults.standard.set(data, forKey: Self.likedPostsStorageKey)
+    }
+
+    /// 合并本地已存「赞过」与信息流里标记为已赞的动态（含首次安装的示例数据）
+    private func reconcileLikedPostsWithFeed() {
+        var byId = Dictionary(uniqueKeysWithValues: likedPosts.map { ($0.id, $0) })
+        for p in followingPosts + recommendPosts + myPublishedPosts where p.isLiked {
+            var copy = p
+            copy.isLiked = true
+            byId[p.id] = copy
+        }
+        likedPosts = byId.values.sorted { $0.createdAt > $1.createdAt }
+        persistLikedPosts()
+    }
+
+    private func unsetLikeInFeedArrays(postId: UUID) {
+        func patch(_ posts: inout [CommunityPost]) {
+            guard let i = posts.firstIndex(where: { $0.id == postId }) else { return }
+            var p = posts[i]
+            guard p.isLiked else { return }
+            p.isLiked = false
+            p.likeCount = max(0, p.likeCount - 1)
+            posts[i] = p
+        }
+        patch(&followingPosts)
+        patch(&recommendPosts)
+        patch(&myPublishedPosts)
+    }
+}
+
+struct OtherUserProfileView: View {
+    let userName: String
+
+    @EnvironmentObject private var communityFeed: CommunityFeedModel
+    @AppStorage(FollowedUsersStore.appStorageKey) private var followedJSON: String = "[]"
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    private var userPosts: [CommunityPost] {
+        communityFeed.posts(author: userName)
+    }
+
+    private var isFollowing: Bool {
+        FollowedUsersStore.isFollowing(userName, json: followedJSON)
+    }
+
+    var body: some View {
+        List {
+            Section {
+                HStack(spacing: 14) {
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.system(size: 52))
+                        .foregroundColor(Color.orange.opacity(0.85))
+                    Text(userName)
+                        .font(.title2.bold())
+                    Spacer()
+                }
+                .padding(.vertical, 4)
+
+                Button {
+                    FollowedUsersStore.setFollowed(userName, add: !isFollowing, json: &followedJSON)
+                } label: {
+                    Text(isFollowing ? L10n.t(.unfollow, lang) : L10n.t(.follow, lang))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(isFollowing ? .gray : .orange)
+            }
+
+            Section(L10n.t(.profileUserPosts, lang)) {
+                if userPosts.isEmpty {
+                    Text(L10n.t(.profileEmptyPosts, lang))
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(userPosts) { post in
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(post.content)
+                                .font(.body)
+                            CommunityPostAttachmentView(post: post)
+                            HStack(spacing: 6) {
+                                Text(post.createdAt, style: .date)
+                                Text(post.createdAt, style: .time)
+                            }
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            Label("\(post.likeCount)", systemImage: "heart")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+        }
+        .navigationTitle(userName)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+#if canImport(PhotosUI) && os(iOS)
+private struct PickedVideoFile: Transferable {
+    let url: URL
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(contentType: .movie) { spec in
+            SentTransferredFile(spec.url)
+        } importing: { received in
+            let dest = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mov")
+            if FileManager.default.fileExists(atPath: dest.path) {
+                try? FileManager.default.removeItem(at: dest)
+            }
+            try FileManager.default.copyItem(at: received.file, to: dest)
+            return Self(url: dest)
+        }
+    }
+}
+#endif
+
+struct CreatePostView: View {
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @Environment(\.dismiss) private var dismiss
+
+    /// 文字、可选图片、可选视频（视频与图片互斥，以最后选择的为准）
+    /// 返回 `String?`：nil 表示允许发布，非 nil 表示拦截原因（用于展示 errorMessage）
+    let onPost: (String, Data?, URL?) -> String?
+
+    @State private var content: String = ""
+    @State private var errorMessage: String?
+    @State private var pendingImageData: Data?
+    @State private var pendingVideoURL: URL?
+
+#if canImport(PhotosUI)
+    @State private var pickedImageItem: PhotosPickerItem?
+    @State private var pickedVideoItem: PhotosPickerItem?
+#endif
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    private var trimmedText: String {
+        content.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var canSubmit: Bool {
+        !trimmedText.isEmpty || pendingImageData != nil || pendingVideoURL != nil
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    TextEditor(text: $content)
+                        .padding(12)
+                        .frame(minHeight: 160)
+                        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+#if canImport(PhotosUI)
+                    HStack(spacing: 12) {
+                        PhotosPicker(selection: $pickedImageItem, matching: .images) {
+                            Label(L10n.t(.postAddImage, lang), systemImage: "photo.on.rectangle.angled")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.orange)
+
+                        PhotosPicker(selection: $pickedVideoItem, matching: .videos) {
+                            Label(L10n.t(.postAddVideo, lang), systemImage: "video.badge.plus")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.orange)
+                    }
+#endif
+
+#if os(iOS)
+                    if let data = pendingImageData, let ui = UIImage(data: data) {
+                        Image(uiImage: ui)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 200)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+#endif
+                    if pendingVideoURL != nil {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color.orange.opacity(0.12))
+                                .frame(height: 120)
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 40))
+                                .foregroundColor(.orange)
+                        }
+                    }
+
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.footnote)
+                            .foregroundColor(.red)
+                    }
+                }
+                .padding(16)
+            }
+            .navigationTitle(L10n.t(.navPost, lang))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L10n.t(.cancel, lang)) { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(L10n.t(.post, lang)) {
+                        errorMessage = nil
+                        guard canSubmit else {
+                            errorMessage = L10n.t(.postNeedContentOrMedia, lang)
+                            return
+                        }
+                        if let reason = onPost(trimmedText, pendingImageData, pendingVideoURL) {
+                            errorMessage = reason
+                            return
+                        }
+                        dismiss()
+                    }
+                    .disabled(!canSubmit)
+                }
+            }
+#if canImport(PhotosUI)
+            .task(id: pickedImageItem) {
+                guard let pickedImageItem else { return }
+                if let data = try? await pickedImageItem.loadTransferable(type: Data.self) {
+                    pendingImageData = data
+                    pendingVideoURL = nil
+                    pickedVideoItem = nil
+                }
+            }
+            .task(id: pickedVideoItem) {
+                guard let pickedVideoItem else { return }
+#if os(iOS)
+                if let file = try? await pickedVideoItem.loadTransferable(type: PickedVideoFile.self) {
+                    pendingVideoURL = file.url
+                    pendingImageData = nil
+                    pickedImageItem = nil
+                }
+#endif
+            }
+#endif
+        }
+    }
+}
+
+// MARK: - AI 助手
+// 【模块说明】AI 教练 Tab：聊天气泡、请求本地 dashscope-proxy、打开训练日志、防刷与内容安全回调。
+
+/// 本地后端 `dashscope-proxy`：默认模拟器用 127.0.0.1；真机请在「设置」或调试时写入 UserDefaults：
+/// - `GoFitnessDashscopeProxyBaseURL` = `http://你的Mac局域网IP:3000`（不要末尾斜杠）
+/// - 若后端 `.env` 设置了 `PROXY_TOKEN`，再设 `GoFitnessDashscopeProxyToken`
+enum DashScopeLocalProxy {
+    private static let baseURLKey = "GoFitnessDashscopeProxyBaseURL"
+    private static let tokenKey = "GoFitnessDashscopeProxyToken"
+
+    static var chatURL: URL {
+        let raw = UserDefaults.standard.string(forKey: baseURLKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let root = raw.isEmpty ? "http://127.0.0.1:3000" : raw
+        let trimmed = root.hasSuffix("/") ? String(root.dropLast()) : root
+        guard let u = URL(string: "\(trimmed)/api/chat") else {
+            return URL(string: "http://127.0.0.1:3000/api/chat")!
+        }
+        return u
+    }
+
+    static func chat(messages: [[String: String]]) async throws -> String {
+        var request = URLRequest(url: chatURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = UserDefaults.standard.string(forKey: tokenKey)?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !token.isEmpty {
+            request.setValue(token, forHTTPHeaderField: "X-Proxy-Token")
+        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["messages": messages])
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+
+        if let err = obj?["error"] as? String, !err.isEmpty {
+            throw NSError(domain: "DashScopeProxy", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: err])
+        }
+        if let errDict = obj?["error"] as? [String: Any], let msg = errDict["message"] as? String, !msg.isEmpty {
+            throw NSError(domain: "DashScopeProxy", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: msg])
+        }
+
+        if !(200...299).contains(http.statusCode) {
+            let snippet = String(data: data, encoding: .utf8) ?? ""
+            throw NSError(domain: "DashScopeProxy", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: snippet])
+        }
+
+        if let choices = obj?["choices"] as? [[String: Any]],
+           let first = choices.first,
+           let message = first["message"] as? [String: Any],
+           let content = message["content"] as? String {
+            return content
+        }
+
+        throw NSError(domain: "DashScopeProxy", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unexpected response JSON"])
+    }
+}
+
+// MARK: - 训练周计划（与 AI 回复中的 JSON 块同步）
+// 【模块说明】从 AI 回复里解析 ```json``` 周计划、写入 AppStorage；`TrainingLogView` 展示本周安排。
+
+private struct TrainingDayStored: Codable, Hashable {
+    var name: String
+    var workouts: [String]
+}
+
+private struct StoredTrainingWeek: Codable {
+    /// 本周周一 00:00（本地）的时间戳
+    var weekStart: TimeInterval
+    var days: [TrainingDayStored]
+}
+
+private struct WeekPlanJSONPayload: Codable {
+    var goFitnessWeekPlan: Bool?
+    var days: [TrainingDayStored]
+}
+
+private enum TrainingWeekCalendar {
+    /// 以周一为一周起始（公历 + firstWeekday = 周一）
+    static func mondayStart(of date: Date) -> Date {
+        var cal = Calendar(identifier: .gregorian)
+        cal.firstWeekday = 2
+        let comps = cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
+        guard let weekDate = cal.date(from: comps) else { return cal.startOfDay(for: date) }
+        return cal.startOfDay(for: weekDate)
+    }
+
+    static func isSameWeekMonday(_ stored: TimeInterval, as date: Date) -> Bool {
+        let d1 = Date(timeIntervalSince1970: stored)
+        let mon = mondayStart(of: date)
+        return Calendar.current.isDate(d1, inSameDayAs: mon)
+    }
+}
+
+private enum TrainingPlanReplyParser {
+    /// 从助手回复中提取 ` ```json ... ``` ` 周计划；成功则从展示文本中移除该块
+    static func displayTextAndWeek(from reply: String) -> (display: String, week: StoredTrainingWeek?) {
+        guard let jsonStart = reply.range(of: "```json") else {
+            return (reply, nil)
+        }
+        let afterMarker = reply[jsonStart.upperBound...]
+        guard let fenceEnd = afterMarker.range(of: "```") else {
+            return (reply, nil)
+        }
+        let jsonString = String(afterMarker[..<fenceEnd.lowerBound])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let before = String(reply[..<jsonStart.lowerBound])
+        let afterFence = String(afterMarker[fenceEnd.upperBound...])
+        let display = (before + afterFence)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let data = jsonString.data(using: .utf8),
+              let payload = try? JSONDecoder().decode(WeekPlanJSONPayload.self, from: data),
+              payload.goFitnessWeekPlan == true,
+              !payload.days.isEmpty
+        else {
+            return (reply, nil)
+        }
+
+        let monday = TrainingWeekCalendar.mondayStart(of: Date())
+        let week = StoredTrainingWeek(weekStart: monday.timeIntervalSince1970, days: payload.days)
+        return (display, week)
+    }
+}
+
+private struct TrainingLogView: View {
+    /// `true`：从 AI 教练 sheet 打开，显示右上角「关闭」。`false`：从「我的」导航进入，使用系统返回。
+    var showDismissButton: Bool = true
+    /// 导航栏标题（与训练日志同一套数据）
+    var navigationTitleKey: LKey = .trainingLogNav
+
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @AppStorage("trainingWeekStoreV1") private var trainingWeekStoreJSON: String = ""
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    private var storedWeek: StoredTrainingWeek? {
+        guard !trainingWeekStoreJSON.isEmpty,
+              let data = trainingWeekStoreJSON.data(using: .utf8),
+              let w = try? JSONDecoder().decode(StoredTrainingWeek.self, from: data)
+        else { return nil }
+        return w
+    }
+
+    private var hasCurrentWeekPlan: Bool {
+        guard let w = storedWeek else { return false }
+        return TrainingWeekCalendar.isSameWeekMonday(w.weekStart, as: Date())
+    }
+
+    /// 按当前语言显示「星期一 / Monday」，不依赖 AI 存盘里的 `day.name` 语言。
+    private func weekdayTitle(week: StoredTrainingWeek, dayIndex: Int) -> String {
+        let monday = Date(timeIntervalSince1970: week.weekStart)
+        guard dayIndex < week.days.count,
+              let dayDate = Calendar.current.date(byAdding: .day, value: dayIndex, to: monday)
+        else {
+            return dayIndex < week.days.count ? week.days[dayIndex].name : ""
+        }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: lang == .en ? "en_US" : "zh_CN")
+        formatter.dateFormat = "EEEE"
+        return formatter.string(from: dayDate)
+    }
+
+    private func weekContainsCJK(_ week: StoredTrainingWeek) -> Bool {
+        for day in week.days {
+            if Self.stringContainsHan(day.name) { return true }
+            for line in day.workouts where Self.stringContainsHan(line) { return true }
+        }
+        return false
+    }
+
+    private static func stringContainsHan(_ s: String) -> Bool {
+        s.unicodeScalars.contains { (0x4E00...0x9FFF).contains($0.value) }
+    }
+
+    var body: some View {
+        Group {
+            if let week = storedWeek, hasCurrentWeekPlan {
+                List {
+                    Section {
+                        Text(L10n.t(.trainingLogThisWeek, lang))
+                            .font(.headline)
+                    }
+                    ForEach(Array(week.days.enumerated()), id: \.offset) { dayIndex, day in
+                        Section(header: Text(weekdayTitle(week: week, dayIndex: dayIndex))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.orange)) {
+                            if day.workouts.isEmpty {
+                                Text(L10n.t(.trainingLogRest, lang))
+                                    .foregroundColor(.secondary)
+                            } else {
+                                ForEach(Array(day.workouts.enumerated()), id: \.offset) { _, line in
+                                    Text(line)
+                                }
+                            }
+                        }
+                    }
+                    if lang == .en, weekContainsCJK(week) {
+                        Section {
+                            Text(L10n.t(.trainingLogWorkoutsLanguageNote, lang))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            } else {
+                VStack(spacing: 20) {
+                    Image(systemName: "text.book.closed.fill")
+                        .font(.system(size: 48))
+                        .foregroundColor(Color.orange.opacity(0.85))
+                    Text(L10n.t(.trainingLogEmpty, lang))
+                        .font(.title3.weight(.semibold))
+                    Text(L10n.t(.trainingLogEmptyHint, lang))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .navigationTitle(L10n.t(navigationTitleKey, lang))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if showDismissButton {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(L10n.t(.close, lang)) { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+private struct AIChatBubble: Identifiable {
+    let id = UUID()
+    let role: String
+    let text: String
+}
+
+struct AIHelperView: View {
+    /// 切换到主界面「动作纠正」Tab
+    var onJumpToFormCheck: () -> Void = {}
+    /// 上滑退出：返回「社区」Tab
+    var onSwipeExit: () -> Void = {}
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @AppStorage("trainingWeekStoreV1") private var trainingWeekStoreJSON: String = ""
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    @FocusState private var inputFocused: Bool
+
+    @State private var bubbles: [AIChatBubble] = []
+    @State private var inputText: String = ""
+    @State private var isLoading: Bool = false
+    @State private var lastAiSendAt: Date?
+    @State private var errorText: String?
+    @State private var showTrainingLog = false
+
+    private var isSendDisabled: Bool {
+        isLoading || inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 12) {
+                            Text(L10n.t(.aiSwipeExitHint, lang))
+                                .font(.caption2)
+                                .foregroundColor(.secondary.opacity(0.85))
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.bottom, 4)
+                            ForEach(bubbles) { bubble in
+                                HStack {
+                                    if bubble.role == "user" { Spacer(minLength: 40) }
+                                    Text(bubble.text)
+                                        .padding(10)
+                                        .background(bubble.role == "user" ? Color.orange.opacity(0.2) : Color.secondary.opacity(0.12))
+                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    if bubble.role != "user" { Spacer(minLength: 40) }
+                                }
+                                .id(bubble.id)
+                            }
+                            if isLoading {
+                                HStack {
+                                    ProgressView()
+                                    Text(L10n.t(.aiThinking, lang))
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                }
+                                .id("loading")
+                            }
+                        }
+                        .padding()
+                    }
+                    .scrollDismissesKeyboard(.interactively)
+                    .simultaneousGesture(
+                        DragGesture(minimumDistance: 56)
+                            .onEnded { value in
+                                let dy = value.translation.height
+                                let dx = abs(value.translation.width)
+                                // 仅在对话区域：上滑（translation.height 为负）返回社区；阈值较大以减少与浏览聊天记录冲突
+                                if dy < -175 && dx < 88 {
+                                    inputFocused = false
+                                    onSwipeExit()
+                                }
+                            }
+                    )
+                    .onChange(of: bubbles.count) { _ in
+                        if let last = bubbles.last {
+                            withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                        }
+                    }
+                    .onChange(of: isLoading) { loading in
+                        if loading {
+                            withAnimation { proxy.scrollTo("loading", anchor: .bottom) }
+                        }
+                    }
+                }
+
+                if let errorText {
+                    Text(errorText)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 4)
+                }
+
+                HStack(alignment: .center, spacing: 10) {
+                    TextField(L10n.t(.aiChatPlaceholder, lang), text: $inputText, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .lineLimit(2...8)
+                        .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 6)
+                        .focused($inputFocused)
+                        .submitLabel(.send)
+                        .onSubmit {
+                            guard !isSendDisabled else { return }
+                            Task { await sendMessage() }
+                        }
+
+                    Button {
+                        Task { await sendMessage() }
+                    } label: {
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(isSendDisabled ? Color.white.opacity(0.6) : Color.white)
+                    }
+                    .buttonStyle(.plain)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(Color.orange.opacity(isSendDisabled ? 0.45 : 1.0))
+                    )
+                    .contentShape(Circle())
+                    .disabled(isSendDisabled)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(colorScheme == .dark ? Color(white: 0.16) : Color.white)
+                )
+                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.45 : 0.1), radius: 14, x: 0, y: 6)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 10)
+            }
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        onJumpToFormCheck()
+                    } label: {
+                        Image(systemName: "figure.strengthtraining.traditional")
+                            .font(.system(size: 26, weight: .medium))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundColor(.orange)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(L10n.t(.tabFormCheck, lang))
+                }
+                ToolbarItem(placement: .principal) {
+                    Text(L10n.t(.tabAICoach, lang))
+                        .font(.headline.weight(.semibold))
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showTrainingLog = true
+                    } label: {
+                        Image(systemName: "text.book.closed.fill")
+                            .font(.system(size: 28, weight: .medium))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundColor(.orange)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(L10n.t(.trainingLogNav, lang))
+                }
+            }
+            .sheet(isPresented: $showTrainingLog) {
+                NavigationStack {
+                    TrainingLogView()
+                }
+            }
+        }
+    }
+
+    private func messagesForAPI() -> [[String: String]] {
+        let planSyncRule: String = {
+            switch lang {
+            case .zhHans:
+                return """
+                当你为用户输出「一整周」（周一至周日）的训练安排时：先用自然语言把计划说清楚；然后在正文最后**另起一段**，**仅追加**一个 markdown 代码块，第一行必须是三个反引号+json，最后一行是三个反引号。代码块内必须是合法 JSON，且包含字段 goFitnessWeekPlan=true，以及 days 数组。
+                days 必须恰好 7 个对象，按周一到周日顺序；每个对象：name 为该日名称（如「周一」），workouts 为字符串数组（当日训练项目，每条一行语义；休息日则用空数组 []）。
+                若本次回复不是「一周七天」的训练计划，则**不要**附加该 json 代码块。
+                """
+            case .en:
+                return """
+                When you output a full Monday-through-Sunday weekly training plan: explain it in natural language first, then append **only one** markdown fenced code block marked as json at the very end. Inside, valid JSON with goFitnessWeekPlan=true and a days array.
+                days must contain exactly 7 objects in Mon→Sun order; each has name (e.g. \"Monday\") and workouts (array of strings; rest days use []).
+                **All strings in the JSON** (days[].name and every workouts[] line) **must be English**, even if the user previously used another language.
+                If this reply is not a full weekly plan, do **not** include this json block.
+                """
+            }
+        }()
+
+        let systemContent = """
+        You are GoFitness, a concise fitness and nutrition coach. Reply in the same language as the user when possible.
+
+        \(planSyncRule)
+        """
+
+        var m: [[String: String]] = [
+            ["role": "system", "content": systemContent]
+        ]
+        for b in bubbles {
+            m.append(["role": b.role, "content": b.text])
+        }
+        return m
+    }
+
+    private func persistTrainingWeek(_ week: StoredTrainingWeek) {
+        guard let data = try? JSONEncoder().encode(week),
+              let str = String(data: data, encoding: .utf8) else { return }
+        trainingWeekStoreJSON = str
+    }
+
+    @MainActor
+    private func sendMessage() async {
+        let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        // 本地防刷：AI 发送冷却
+        let now = Date()
+        if let last = lastAiSendAt,
+           now.timeIntervalSince(last) < 2.0 {
+            errorText = "发送过快，请稍后再试"
+            return
+        }
+
+        // 本地拦截：明显不良/联系方式/链接等（示例规则）
+        if let reason = ContentSafety.rejectionReason(for: trimmed) {
+            errorText = reason
+            return
+        }
+
+        lastAiSendAt = now
+
+        errorText = nil
+        inputText = ""
+        bubbles.append(AIChatBubble(role: "user", text: trimmed))
+        isLoading = true
+
+        do {
+            let reply = try await DashScopeLocalProxy.chat(messages: messagesForAPI())
+            let parsed = TrainingPlanReplyParser.displayTextAndWeek(from: reply)
+            bubbles.append(AIChatBubble(role: "assistant", text: parsed.display))
+            if let week = parsed.week {
+                persistTrainingWeek(week)
+            }
+        } catch {
+            errorText = Self.formatAIProxyError(error, lang: lang)
+        }
+
+        isLoading = false
+    }
+
+    /// 连接类错误时附带模拟器 / 真机下的代理排查说明（`Could not connect to the server` 等）。
+    private static func formatAIProxyError(_ error: Error, lang: AppLanguage) -> String {
+        let detail = error.localizedDescription
+        let base = L10n.t(.aiErrorGeneric, lang) + "\n" + detail
+
+        let urlCode: URLError.Code? = {
+            if let u = error as? URLError { return u.code }
+            let ns = error as NSError
+            if let u = ns.userInfo[NSUnderlyingErrorKey] as? URLError { return u.code }
+            if ns.domain == NSURLErrorDomain {
+                return URLError.Code(rawValue: ns.code)
+            }
+            return nil
+        }()
+
+        let connectionLike: Set<URLError.Code> = [
+            .cannotConnectToHost, .cannotFindHost, .timedOut, .networkConnectionLost,
+            .notConnectedToInternet, .dnsLookupFailed
+        ]
+        guard let code = urlCode, connectionLike.contains(code) else {
+            return base
+        }
+
+        #if targetEnvironment(simulator)
+        return base + "\n\n" + L10n.t(.aiErrorProxyHintSimulator, lang)
+        #else
+        return base + "\n\n" + L10n.t(.aiErrorProxyHintDevice, lang)
+        #endif
+    }
+}
+
+// MARK: - 动作纠正
+
+private struct VideoSquatAnalysisPayload: Identifiable {
+    let id = UUID()
+    let url: URL
+    let intent: String
+}
+
+struct MotionCorrectionView: View {
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @State private var actionIntent: String = ""
+#if canImport(PhotosUI)
+    @State private var pickedVideoItem: PhotosPickerItem?
+#endif
+    @State private var pendingVideoURL: URL?
+    @State private var analysisPayload: VideoSquatAnalysisPayload?
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    private var trimmedIntent: String {
+        actionIntent.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Text(L10n.t(.formDesc, lang))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                }
+
+                Section {
+                    TextField(L10n.t(.formIntentPlaceholder, lang), text: $actionIntent)
+                        .textInputAutocapitalization(.never)
+                    Button {
+                        actionIntent = L10n.t(.formActionPresetSquat, lang)
+                    } label: {
+                        Label(L10n.t(.formActionPresetSquat, lang), systemImage: "bolt.fill")
+                    }
+                } header: {
+                    Text(L10n.t(.formTitle, lang))
+                } footer: {
+                    Text(L10n.t(.formIntentFooter, lang))
+                }
+
+                Section {
+                    NavigationLink {
+                        SquatRecognitionDemoView(intendedExercise: trimmedIntent)
+                    } label: {
+                        Label(L10n.t(.formSquatLiveButton, lang), systemImage: "camera.viewfinder")
+                    }
+                }
+
+#if canImport(PhotosUI)
+                Section {
+                    PhotosPicker(selection: $pickedVideoItem, matching: .videos) {
+                        Label(L10n.t(.formPickVideoLabel, lang), systemImage: "photo.on.rectangle.angled")
+                    }
+                    if pendingVideoURL != nil {
+                        Text(L10n.t(.formVideoReadyHint, lang))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    Button {
+                        guard let url = pendingVideoURL else { return }
+                        analysisPayload = VideoSquatAnalysisPayload(url: url, intent: trimmedIntent)
+                    } label: {
+                        Text(L10n.t(.formStartVideoAnalysis, lang))
+                    }
+                    .disabled(pendingVideoURL == nil)
+                } header: {
+                    Text(L10n.t(.formVideoAnalysisSection, lang))
+                }
+#endif
+            }
+            .navigationTitle(L10n.t(.tabFormCheck, lang))
+            .sheet(item: $analysisPayload) { payload in
+                NavigationStack {
+                    VideoSquatAnalysisView(videoURL: payload.url, intendedExercise: payload.intent)
+                }
+            }
+#if canImport(PhotosUI)
+            .task(id: pickedVideoItem) {
+                guard let pickedVideoItem else { return }
+#if os(iOS)
+                if let file = try? await pickedVideoItem.loadTransferable(type: PickedVideoFile.self) {
+                    pendingVideoURL = file.url
+                }
+#endif
+            }
+#endif
+        }
+    }
+}
+
+// MARK: - 成就
+// 【模块说明】成就页 + 积分商城：目标勾选、积分增减、商品兑换；下方注释较细，便于对照 UI。
+// 说明：以下为成就页与积分商城相关类型；注释仅覆盖本段，避免整份 ContentView（数千行）逐行注释难以维护。
+
+/// 商城中可兑换的一条奖励（标题 + 说明 + 所需积分）。
+private struct ShopReward: Identifiable {
+    let id: String // 唯一标识，写入 UserDefaults 表示已兑换
+    let titleKey: LKey // 标题在 L10n 中的键
+    let descKey: LKey // 描述文案键
+    let cost: Int // 所需积分
+}
+
+/// 积分商城（从成就页右上角购物车打开）。
+private struct PointsShopView: View {
+    @Environment(\.dismiss) private var dismiss // 用于关闭当前 sheet
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue // 当前界面语言
+    @AppStorage("userPoints") private var userPoints: Int = 0 // 用户剩余积分（与成就页共用）
+    @AppStorage("redeemedShopItemIds") private var redeemedShopIdsRaw: String = "" // 已兑换商品 id，逗号分隔
+
+    @State private var showShopAlert = false // 是否显示提示弹窗
+    @State private var shopAlertText = "" // 弹窗正文
+
+    /// 静态商品列表（演示数据）。
+    private let shopRewards: [ShopReward] = [
+        ShopReward(id: "coach_boost", titleKey: .shopRewardCoachTitle, descKey: .shopRewardCoachDesc, cost: 180),
+        ShopReward(id: "theme_frame", titleKey: .shopRewardThemeTitle, descKey: .shopRewardThemeDesc, cost: 120),
+        ShopReward(id: "streak_badge", titleKey: .shopRewardBadgeTitle, descKey: .shopRewardBadgeDesc, cost: 90)
+    ]
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans } // 解析语言枚举
+
+    var body: some View {
+        List {
+            Section {
+                HStack {
+                    Text(L10n.t(.shopBalance, lang)) // 「当前积分」标签
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("\(userPoints)") // 大号数字：当前积分
+                            .font(.system(size: 28, weight: .bold))
+                        Text(L10n.t(.pointsUnitBadge, lang)) // 单位：中文「分」/ 英文「PTS」
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(8)
+                    .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous)) // 浅橙底卡片
+                }
+                .padding(.vertical, 4)
+            }
+
+            Section {
+                ForEach(shopRewards) { reward in // 遍历每个商品
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(L10n.t(reward.titleKey, lang)) // 商品名（多语言）
+                                    .font(.headline)
+                                Text(L10n.t(reward.descKey, lang)) // 商品说明
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer(minLength: 8)
+                            Text(String(format: L10n.t(.shopPointsFormat, lang), reward.cost)) // 价格：如「180 积分」/「180 pts」
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.orange)
+                        }
+
+                        if shopItemRedeemed(reward.id) { // 若已兑换过
+                            Text(L10n.t(.shopRedeemed, lang))
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.green)
+                        } else {
+                            Button {
+                                redeem(reward) // 扣积分并记录兑换
+                            } label: {
+                                Text(L10n.t(.shopRedeem, lang))
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.orange)
+                            .disabled(userPoints < reward.cost) // 积分不足则禁用
+                            .opacity(userPoints < reward.cost ? 0.45 : 1)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+        .navigationTitle(L10n.t(.shopSection, lang)) // 导航标题：积分商城
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(L10n.t(.close, lang)) { dismiss() } // 关闭商城
+            }
+        }
+        .alert(L10n.t(.shopSection, lang), isPresented: $showShopAlert) {
+            Button(L10n.t(.close, lang), role: .cancel) {}
+        } message: {
+            Text(shopAlertText) // 如积分不足提示
+        }
+    }
+
+    /// 某商品 id 是否已在本地记录为已兑换。
+    private func shopItemRedeemed(_ id: String) -> Bool {
+        Set(redeemedShopIdsRaw.split(separator: ",").map(String.init)).contains(id)
+    }
+
+    /// 兑换：校验积分、扣减、写入已兑换集合。
+    private func redeem(_ reward: ShopReward) {
+        if shopItemRedeemed(reward.id) { return }
+        if userPoints < reward.cost {
+            shopAlertText = L10n.t(.shopInsufficient, lang)
+            showShopAlert = true
+            return
+        }
+        userPoints -= reward.cost
+        var set = Set(redeemedShopIdsRaw.split(separator: ",").map(String.init))
+        set.insert(reward.id)
+        redeemedShopIdsRaw = set.sorted().joined(separator: ",")
+    }
+}
+
+/// 成就任务完成时右侧绿色对勾弹出动画（行移除前短暂展示）。
+private struct AchievementGoalCompleteCheckmark: View {
+    @State private var appeared = false
+
+    var body: some View {
+        Image(systemName: "checkmark.circle.fill")
+            .font(.system(size: 34, weight: .semibold))
+            .foregroundColor(.green)
+            .shadow(color: .green.opacity(0.4), radius: 8, y: 2)
+            .scaleEffect(appeared ? 1 : 0.2)
+            .opacity(appeared ? 1 : 0)
+            .onAppear {
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.62)) {
+                    appeared = true
+                }
+            }
+    }
+}
+
+/// 成就页：展示总积分、可勾选目标、打开积分商城。
+struct AchievementsView: View {
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @AppStorage("userPoints") private var userPoints: Int = 0
+    /// 已完成并领取过积分的任务 id（与 `Goal.id` 一致），防止重复勾选刷分。
+    @AppStorage("completedAchievementGoalIds") private var completedGoalIdsRaw: String = ""
+
+    /// 全部任务定义（稳定 id，用于持久化「已完成」）。
+    private static let allGoals: [Goal] = [
+        Goal(id: "goal_train_3", titleKey: .goalTitleTrain3, points: 50),
+        Goal(id: "goal_walk_8000", titleKey: .goalTitleWalk8000, points: 20),
+        Goal(id: "goal_sleep_early_3", titleKey: .goalTitleSleepEarly3, points: 30)
+    ]
+
+    @State private var showPointsShop = false // 是否弹出积分商城 sheet
+    /// 正在播放完成动画的任务 id；动画结束后再写入完成状态使行消失。
+    @State private var completingGoalId: String?
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    private var completedGoalIds: Set<String> {
+        Set(completedGoalIdsRaw.split(separator: ",").map(String.init).filter { !$0.isEmpty })
+    }
+
+    /// 尚未领取积分的任务（完成后从列表移除，不可再次操作）。
+    private var pendingGoals: [Goal] {
+        Self.allGoals.filter { !completedGoalIds.contains($0.id) }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(L10n.t(.achievementsTitle, lang)) // 页内大标题
+                                .font(.title2.bold())
+                            Text(L10n.t(.achievementsDesc, lang)) // 说明文字
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.leading)
+                        }
+                        Spacer()
+                        VStack {
+                            Text("\(userPoints)") // 右上角积分数字
+                                .font(.system(size: 28, weight: .bold))
+                            Text(L10n.t(.pointsUnitBadge, lang)) // 单位：分 / PTS
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(8)
+                        .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                Section(header: Text(L10n.t(.myGoalsSection, lang))) { // 「我的目标」分组标题
+                    if pendingGoals.isEmpty {
+                        Text(L10n.t(.achievementsNoPendingGoals, lang))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    ForEach(pendingGoals) { goal in
+                        Button {
+                            beginGoalCompletionAnimation(for: goal)
+                        } label: {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(L10n.t(goal.titleKey, lang)) // 目标标题（多语言）
+                                    Text(String(format: L10n.t(.goalRewardPointsFormat, lang), goal.points)) // 如「+50 分」「+50 pts」
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer(minLength: 8)
+                                ZStack {
+                                    if completingGoalId == goal.id {
+                                        AchievementGoalCompleteCheckmark()
+                                    } else {
+                                        Image(systemName: "circle")
+                                            .font(.title3)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                .frame(width: 44, height: 44)
+                            }
+                            .padding(.vertical, 2)
+                            .background {
+                                if completingGoalId == goal.id {
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(Color.green.opacity(0.12))
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(completingGoalId != nil)
+                    }
+                }
+            }
+            .navigationTitle(L10n.t(.achievementsNav, lang)) // 导航栏标题「成就」
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showPointsShop = true // 打开商城 sheet
+                    } label: {
+                        Image(systemName: "cart.fill")
+                            .symbolRenderingMode(.hierarchical)
+                    }
+                    .tint(.orange)
+                    .accessibilityLabel(L10n.t(.shopSection, lang))
+                }
+            }
+            .sheet(isPresented: $showPointsShop) {
+                NavigationStack {
+                    PointsShopView() // 半屏/全屏展示商城
+                }
+            }
+        }
+    }
+
+    /// 先播绿色对勾动画，再落库并移除行。
+    private func beginGoalCompletionAnimation(for goal: Goal) {
+        guard completingGoalId == nil, !completedGoalIds.contains(goal.id) else { return }
+        completingGoalId = goal.id
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(680))
+            completeGoal(goal)
+            if completingGoalId == goal.id {
+                completingGoalId = nil
+            }
+        }
+    }
+
+    /// 标记完成：加积分一次，并持久化 id，列表中不再显示该任务。
+    private func completeGoal(_ goal: Goal) {
+        guard !completedGoalIds.contains(goal.id) else { return }
+        userPoints += goal.points
+        var set = completedGoalIds
+        set.insert(goal.id)
+        completedGoalIdsRaw = set.sorted().joined(separator: ",")
+    }
+}
+
+/// 单条目标：用 LKey 做标题以便随语言切换；`points` 为完成时奖励积分。
+struct Goal: Identifiable {
+    let id: String // 与 `completedAchievementGoalIds` 对应，需稳定
+    let titleKey: LKey // 标题文案键
+    let points: Int // 完成奖励积分
+}
+
+// MARK: - 设置
+// 【模块说明】设置页：语言切换、账号入口等（从「我的」齿轮进入）。
+
+struct SettingsView: View {
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @AppStorage("isSignedIn") private var isSignedIn: Bool = false
+    @AppStorage("userPhone") private var userPhone: String = ""
+    @AppStorage("GoFitnessDashscopeProxyBaseURL") private var dashscopeProxyBaseURL: String = ""
+    @AppStorage("GoFitnessDashscopeProxyToken") private var dashscopeProxyToken: String = ""
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField(L10n.t(.settingsAiProxyURL, lang), text: $dashscopeProxyBaseURL, prompt: Text(verbatim: "http://192.168.0.10:3000"))
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.URL)
+                    SecureField(L10n.t(.settingsAiProxyToken, lang), text: $dashscopeProxyToken)
+                    Text(L10n.t(.settingsAiProxyHint, lang))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } header: {
+                    Text(L10n.t(.settingsAiProxySection, lang))
+                }
+
+                Section(L10n.t(.accountSettings, lang)) {
+                    NavigationLink {
+                        AccountSettingsView()
+                    } label: {
+                        HStack {
+                            Text(L10n.t(.account, lang))
+                            Spacer()
+                            Text(isSignedIn ? (userPhone.isEmpty ? L10n.t(.noPhone, lang) : userPhone) : L10n.t(.signedOut, lang))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                Section(L10n.t(.language, lang)) {
+                    NavigationLink {
+                        LanguageSettingsView()
+                    } label: {
+                        HStack {
+                            Text(L10n.t(.language, lang))
+                            Spacer()
+                            Text(lang.displayName)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+            .navigationTitle(L10n.t(.settingsTitle, lang))
+        }
+    }
+}
+
+struct AccountSettingsView: View {
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @AppStorage("isSignedIn") private var isSignedIn: Bool = false
+    @AppStorage("userPhone") private var userPhone: String = ""
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    var body: some View {
+        Form {
+            Section(L10n.t(.currentAccount, lang)) {
+                HStack {
+                    Text(L10n.t(.phone, lang))
+                    Spacer()
+                    Text(isSignedIn ? (userPhone.isEmpty ? L10n.t(.unbound, lang) : userPhone) : L10n.t(.signedOut, lang))
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Section {
+                if isSignedIn {
+                    NavigationLink {
+                        ChangePhoneView()
+                    } label: {
+                        Text(L10n.t(.changePhone, lang))
+                    }
+                } else {
+                    Text(L10n.t(.managePhoneHint, lang))
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .navigationTitle(L10n.t(.accountSettings, lang))
+    }
+}
+
+struct ChangePhoneView: View {
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @AppStorage("userPhone") private var userPhone: String = ""
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var newPhone: String = ""
+    @State private var code: String = ""
+    @State private var hint: String?
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    var body: some View {
+        Form {
+            Section(L10n.t(.currentPhone, lang)) {
+                HStack {
+                    Text(L10n.t(.phone, lang))
+                    Spacer()
+                    Text(userPhone.isEmpty ? L10n.t(.unbound, lang) : userPhone)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Section(L10n.t(.newPhone, lang)) {
+                TextField(L10n.t(.enterNewPhone, lang), text: $newPhone)
+                    .textContentType(.telephoneNumber)
+
+                HStack {
+                    TextField(L10n.t(.codePlaceholder, lang), text: $code)
+                        .textContentType(.oneTimeCode)
+
+                    Spacer()
+
+                    Button(L10n.t(.sendCode, lang)) {
+                        let trimmed = newPhone.trimmingCharacters(in: .whitespacesAndNewlines)
+                        hint = trimmed.isEmpty
+                        ? L10n.t(.enterNewPhoneFirst, lang)
+                        : L10n.t(.codeSentDemo, lang)
+                    }
+                    .font(.footnote)
+                }
+            }
+
+            if let hint {
+                Section {
+                    Text(hint)
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Section {
+                Button {
+                    let trimmed = newPhone.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if trimmed.isEmpty {
+                        hint = L10n.t(.phoneEmpty, lang)
+                        return
+                    }
+                    userPhone = trimmed
+                    dismiss()
+                } label: {
+                    Text(L10n.t(.save, lang))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+        }
+        .navigationTitle(L10n.t(.changePhone, lang))
+    }
+}
+
+struct LanguageSettingsView: View {
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(AppLanguage.allCases) { option in
+                    Button {
+                        appLanguageRaw = option.rawValue
+                    } label: {
+                        HStack {
+                            Text(option.displayName)
+                            Spacer()
+                            if option == lang {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(Color.accentColor)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .navigationTitle(L10n.t(.languageSettingsTitle, lang))
+    }
+}
+
+// MARK: - 我的
+// 【模块说明】「我的」Tab：账号区、内容入口（计划/帖子/成就）、社交入口、登出。
+
+struct MyView: View {
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @AppStorage("isSignedIn") private var isSignedIn: Bool = false
+    @AppStorage("userDisplayName") private var userDisplayName: String = ""
+
+    @State private var showAuth: Bool = false
+    @State private var showEditProfile: Bool = false
+    @State private var showSignOutConfirm: Bool = false
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section(L10n.t(.account, lang)) {
+                    Button {
+                        if isSignedIn {
+                            showEditProfile = true
+                        } else {
+                            showAuth = true
+                        }
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: isSignedIn ? "person.crop.circle.badge.checkmark" : "person.crop.circle.fill")
+                                .font(.system(size: 36))
+                                .foregroundColor(.secondary)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(isSignedIn ? (userDisplayName.isEmpty ? L10n.t(.signedIn, lang) : userDisplayName) : L10n.t(.notSignedIn, lang))
+                                    .font(.headline)
+                                Text(isSignedIn ? L10n.t(.welcomeBack, lang) : L10n.t(.tapToSignIn, lang))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Section(L10n.t(.content, lang)) {
+                    NavigationLink {
+                        TrainingLogView(showDismissButton: false, navigationTitleKey: .myPlan)
+                    } label: {
+                        Text(L10n.t(.myPlan, lang))
+                    }
+                    NavigationLink(L10n.t(.myPosts, lang)) {
+                        MyPostsView()
+                    }
+                    NavigationLink(L10n.t(.achievementsNav, lang)) {
+                        AchievementsView()
+                    }
+                }
+
+                Section(L10n.t(.social, lang)) {
+                    NavigationLink(L10n.t(.myFollowing, lang)) {
+                        MyFollowingView()
+                    }
+                    NavigationLink(L10n.t(.liked, lang)) {
+                        LikedPostsView()
+                    }
+                }
+
+                if isSignedIn {
+                    Section {
+                        Button(role: .destructive) {
+                            showSignOutConfirm = true
+                        } label: {
+                            Text(L10n.t(.signOut, lang))
+                        }
+                    }
+                }
+            }
+            .navigationTitle(L10n.t(.meTitle, lang))
+            .navigationDestination(for: String.self) { userName in
+                OtherUserProfileView(userName: userName)
+            }
+            .toolbar {
+                ToolbarItem(placement: .automatic) {
+                    NavigationLink {
+                        SettingsView()
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityLabel(L10n.t(.settingsTitle, lang))
+                }
+            }
+            .sheet(isPresented: $showAuth) {
+                AuthFlowView()
+            }
+            .sheet(isPresented: $showEditProfile) {
+                EditProfileView()
+            }
+            .confirmationDialog(
+                L10n.t(.signOutConfirm, lang),
+                isPresented: $showSignOutConfirm,
+                titleVisibility: .visible
+            ) {
+                Button(L10n.t(.signOut, lang), role: .destructive) {
+                    isSignedIn = false
+                    userDisplayName = ""
+                }
+                Button(L10n.t(.cancel, lang), role: .cancel) {}
+            }
+        }
+    }
+}
+
+// MARK: - 我发布的（与社区「我的」共用 feed.myPublishedPosts）
+// 【模块说明】仅展示当前用户发布过的帖子列表（数据来自 `CommunityFeedModel`）。
+
+struct MyPostsView: View {
+    @EnvironmentObject private var feed: CommunityFeedModel
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @AppStorage("isSignedIn") private var isSignedIn: Bool = false
+    @AppStorage("userDisplayName") private var userDisplayName: String = ""
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    private var currentAuthorLabel: String {
+        if isSignedIn, !userDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return userDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return L10n.t(.guest, lang)
+    }
+
+    var body: some View {
+        Group {
+            if feed.myPublishedPosts.isEmpty {
+                VStack(spacing: 16) {
+                    Text(L10n.t(.myPosts, lang))
+                        .font(.title2)
+                        .padding(.top)
+                    Text(L10n.t(.myPostsDesc, lang))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List {
+                    Section {
+                        ForEach(feed.myPublishedPosts) { post in
+                            let postId = post.id
+                            CommunityPostListRow(
+                                post: Binding(
+                                    get: { feed.myPublishedPosts.first(where: { $0.id == postId }) ?? post },
+                                    set: { new in
+                                        guard let i = feed.myPublishedPosts.firstIndex(where: { $0.id == postId }) else { return }
+                                        var list = feed.myPublishedPosts
+                                        list[i] = new
+                                        feed.myPublishedPosts = list
+                                    }
+                                ),
+                                currentUserLabel: currentAuthorLabel
+                            )
+                        }
+                    } footer: {
+                        Text(L10n.t(.communityMyFeedFooter, lang))
+                    }
+                }
+            }
+        }
+        .navigationTitle(L10n.t(.myPosts, lang))
+    }
+}
+
+struct MyFollowingView: View {
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @AppStorage(FollowedUsersStore.appStorageKey) private var followedJSON: String = "[]"
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    private var followedNames: [String] {
+        FollowedUsersStore.names(from: followedJSON).sorted()
+    }
+
+    var body: some View {
+        Group {
+            if followedNames.isEmpty {
+                VStack(spacing: 16) {
+                    Text(L10n.t(.myFollowing, lang))
+                        .font(.title2)
+                        .padding(.top)
+                    Text(L10n.t(.followingListEmpty, lang))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List {
+                    ForEach(followedNames, id: \.self) { name in
+                        NavigationLink {
+                            OtherUserProfileView(userName: name)
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "person.crop.circle.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.secondary)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(name)
+                                        .font(.headline)
+                                    Text(L10n.t(.followingNow, lang))
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle(L10n.t(.myFollowing, lang))
+    }
+}
+
+// MARK: - 我赞过的
+// 【模块说明】展示用户点过赞的帖子列表（本地模型筛选）。
+
+struct LikedPostsView: View {
+    @EnvironmentObject private var feed: CommunityFeedModel
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    var body: some View {
+        Group {
+            if feed.likedPosts.isEmpty {
+                VStack(spacing: 16) {
+                    Text(L10n.t(.liked, lang))
+                        .font(.title2)
+                        .padding(.top)
+                    Text(L10n.t(.likedDesc, lang))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List {
+                    ForEach(feed.likedPosts) { post in
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "person.crop.circle.fill")
+                                    .foregroundColor(.secondary)
+                                Text(post.author)
+                                    .font(.headline)
+                                Spacer()
+                                Text(post.createdAt, style: .time)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Text(post.content)
+                                .font(.body)
+                            CommunityPostAttachmentView(post: post)
+                            HStack(spacing: 10) {
+                                Button {
+                                    feed.removeLikeEverywhere(postId: post.id)
+                                } label: {
+                                    Label(
+                                        L10n.t(.like, lang),
+                                        systemImage: "heart.fill"
+                                    )
+                                }
+                                .labelStyle(.iconOnly)
+                                .foregroundColor(Color.red)
+                                .buttonStyle(.plain)
+                                Text("\(max(0, post.likeCount))")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                            }
+                            .padding(.top, 2)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+        }
+        .navigationTitle(L10n.t(.liked, lang))
+    }
+}
+
+// MARK: - 登录 / 注册
+// 【模块说明】登录、注册页：表单、`AppStorage` 模拟登录态。
+
+struct AuthFlowView: View {
+    var body: some View {
+        NavigationStack {
+            LoginView()
+        }
+    }
+}
+
+struct LoginView: View {
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @AppStorage("isSignedIn") private var isSignedIn: Bool = false
+    @AppStorage("userDisplayName") private var userDisplayName: String = ""
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var identifier: String = ""
+    @State private var password: String = ""
+    @State private var errorMessage: String?
+    @State private var showForgotPassword: Bool = false
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                VStack(spacing: 6) {
+                    Text(L10n.t(.loginTitle, lang))
+                        .font(.largeTitle.bold())
+                    Text(L10n.t(.loginSubtitle, lang))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 8)
+                .padding(.bottom, 8)
+
+                VStack(spacing: 12) {
+                    TextField(
+                        "",
+                        text: $identifier,
+                        prompt: Text(L10n.t(.phoneOrEmail, lang)).foregroundColor(.secondary)
+                    )
+                    .textContentType(.username)
+                    .autocorrectionDisabled()
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+#if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.emailAddress)
+#endif
+
+                    SecureField(
+                        "",
+                        text: $password,
+                        prompt: Text(L10n.t(.password, lang)).foregroundColor(.secondary)
+                    )
+                    .textContentType(.password)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+
+                HStack {
+                Spacer()
+                Button(L10n.t(.forgotPassword, lang)) {
+                    showForgotPassword = true
+                }
+                .font(.footnote)
+            }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundColor(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Button {
+                errorMessage = nil
+                let trimmed = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty || password.isEmpty {
+                    errorMessage = L10n.t(.fillAccountPassword, lang)
+                    return
+                }
+
+                userDisplayName = trimmed
+                isSignedIn = true
+                dismiss()
+            } label: {
+                Text(L10n.t(.loginTitle, lang))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.orange)
+
+            HStack(spacing: 6) {
+                Text(L10n.t(.newHere, lang))
+                    .foregroundColor(.secondary)
+                NavigationLink(L10n.t(.createAccount, lang)) {
+                    RegisterView()
+                }
+            }
+            .font(.footnote)
+            .padding(.top, 2)
+
+                Spacer(minLength: 24)
+            }
+            .padding(20)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button(L10n.t(.close, lang)) {
+                    dismiss()
+                }
+            }
+        }
+        .sheet(isPresented: $showForgotPassword) {
+            ForgotPasswordView()
+        }
+    }
+}
+
+// MARK: - 忘记密码（占位）
+// 【模块说明】忘记密码流程演示，无真实发信。
+
+struct ForgotPasswordView: View {
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var identifier: String = ""
+    @State private var hint: String?
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 14) {
+                Text(L10n.t(.resetTitle, lang))
+                    .font(.title2.bold())
+                    .padding(.top, 8)
+
+                Text(L10n.t(.resetSubtitle, lang))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+
+                TextField(
+                    "",
+                    text: $identifier,
+                    prompt: Text(L10n.t(.phoneOrEmail, lang)).foregroundColor(.secondary)
+                )
+                .textContentType(.username)
+                .autocorrectionDisabled()
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+#if os(iOS)
+                .textInputAutocapitalization(.never)
+                .keyboardType(.emailAddress)
+#endif
+
+                Button {
+                    let trimmed = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if trimmed.isEmpty {
+                        hint = L10n.t(.resetNeedIdentifier, lang)
+                        return
+                    }
+                    hint = L10n.t(.resetGenerated, lang)
+                } label: {
+                    Text(L10n.t(.sendInstructions, lang))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+
+                if let hint {
+                    Text(hint)
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 2)
+                }
+
+                Spacer()
+            }
+            .padding(20)
+            .navigationTitle(L10n.t(.resetTitle, lang))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L10n.t(.close, lang)) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - 个人资料（占位）
+// 【模块说明】编辑昵称等，演示用表单。
+
+struct EditProfileView: View {
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @AppStorage("userDisplayName") private var userDisplayName: String = ""
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var draftName: String = ""
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    HStack(spacing: 12) {
+                        Image(systemName: "person.crop.circle.fill")
+                            .font(.system(size: 44))
+                            .foregroundColor(.secondary)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(L10n.t(.avatarAndName, lang))
+                                .font(.headline)
+                            Text(L10n.t(.avatarHint, lang))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 6)
+                }
+
+                Section(L10n.t(.displayName, lang)) {
+                    TextField(L10n.t(.enterName, lang), text: $draftName)
+                        .textContentType(.name)
+                }
+            }
+            .navigationTitle(L10n.t(.profileTitle, lang))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L10n.t(.cancelProfile, lang)) { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(L10n.t(.saveProfile, lang)) {
+                        let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
+                        userDisplayName = trimmed
+                        dismiss()
+                    }
+                    .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+            .onAppear {
+                draftName = userDisplayName
+            }
+        }
+    }
+}
+
+struct RegisterView: View {
+    @AppStorage("appLanguage") private var appLanguageRaw: String = AppLanguage.zhHans.rawValue
+    @AppStorage("isSignedIn") private var isSignedIn: Bool = false
+    @AppStorage("userDisplayName") private var userDisplayName: String = ""
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var identifier: String = ""
+    @State private var password: String = ""
+    @State private var confirmPassword: String = ""
+    @State private var errorMessage: String?
+
+    private var lang: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .zhHans }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                VStack(spacing: 6) {
+                    Text(L10n.t(.registerTitle, lang))
+                        .font(.largeTitle.bold())
+                    Text(L10n.t(.registerSubtitle, lang))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 8)
+                .padding(.bottom, 8)
+
+                VStack(spacing: 12) {
+                    TextField(
+                        "",
+                        text: $identifier,
+                        prompt: Text(L10n.t(.phoneOrEmail, lang)).foregroundColor(.secondary)
+                    )
+                    .textContentType(.username)
+                    .autocorrectionDisabled()
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+#if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.emailAddress)
+#endif
+
+                    // 仅主密码用 .newPassword；确认框若也用 .newPassword，系统会把两框当成同一组导致内容被同步。
+                    SecureField(
+                        "",
+                        text: $password,
+                        prompt: Text(L10n.t(.passwordMin, lang)).foregroundColor(.secondary)
+                    )
+                    .textContentType(.newPassword)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .id("registerPasswordField")
+
+                    SecureField(
+                        "",
+                        text: $confirmPassword,
+                        prompt: Text(L10n.t(.confirmPassword, lang)).foregroundColor(.secondary)
+                    )
+                    .textContentType(.password)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .id("registerConfirmPasswordField")
+                }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundColor(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Button {
+                errorMessage = nil
+                let trimmed = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty || password.isEmpty || confirmPassword.isEmpty {
+                    errorMessage = L10n.t(.fillAllFields, lang)
+                    return
+                }
+                if password.count < 6 {
+                    errorMessage = L10n.t(.pwAtLeast6, lang)
+                    return
+                }
+                if password != confirmPassword {
+                    errorMessage = L10n.t(.pwMismatch, lang)
+                    return
+                }
+
+                userDisplayName = trimmed
+                isSignedIn = true
+                dismiss()
+            } label: {
+                Text(L10n.t(.createAndSignIn, lang))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.orange)
+
+                Spacer(minLength: 24)
+            }
+            .padding(20)
+        }
+        .scrollDismissesKeyboard(.interactively)
+    }
+}
+
+#Preview {
+    ContentView()
+}
